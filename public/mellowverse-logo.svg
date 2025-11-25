@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="150" viewBox="0 0 500 150">
+  <defs>
+    <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#f8fafc"/>
+      <stop offset="100%" style="stop-color:#e2e8f0"/>
+    </linearGradient>
+    <linearGradient id="text-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#4f46e5"/>
+      <stop offset="50%" style="stop-color:#9333ea"/>
+      <stop offset="100%" style="stop-color:#ec4899"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background rounded rectangle -->
+  <rect x="8" y="59" width="484" height="32" rx="16" fill="url(#bg-gradient)" stroke="#e2e8f0" stroke-width="1"/>
+  
+  <!-- Design brush icon -->
+  <circle cx="28" cy="75" r="6" fill="#2563eb"/>
+  <path d="M25 73 c-0.83 0-1.5 0.67-1.5 1.5 c0 0.66-0.58 1-1 1 c0.46 0.61 1.25 1 2 1 c1.1 0 2-0.9 2-2 c0-0.83-0.67-1.5-1.5-1.5z m6.86-4.69 l-0.67-0.67 c-0.2-0.2-0.51-0.2-0.71 0 L26 76.13 L27.88 77.5 l4.48-4.48 c0.2-0.2 0.2-0.51 0-0.71z" fill="white" transform="scale(0.5) translate(16, 142)"/>
+  
+  <!-- Code brackets icon -->
+  <rect x="44" y="69" width="12" height="12" rx="2" fill="#16a34a"/>
+  <path d="M47 73.42 L48.41 74.76 L46.66 76 L48.41 77.76 L47 79.17 L43.24 75.41 V74.59 L47 73.42z m4 0 L52.41 74.76 L50.66 76 L52.41 77.76 L51 79.17 L47.24 75.41 V74.59 L51 73.42z" fill="white" transform="scale(0.4) translate(45, 67)"/>
+  
+  <!-- Separator line -->
+  <line x1="64" y1="69" x2="64" y2="81" stroke="#cbd5e1" stroke-width="1"/>
+  
+  <!-- Text -->
+  <text x="76" y="77" font-family="Arial, sans-serif" font-size="11" font-weight="500" letter-spacing="0.5px" fill="url(#text-gradient)">mellowverse</text>
+</svg>
