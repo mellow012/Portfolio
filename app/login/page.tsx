@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, FormEvent } from 'react'
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth'
 import { auth, } from '../../lib/firebaseConfig'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { LogIn, Mail, Lock, Loader2 } from 'lucide-react'
+import { FirebaseError } from 'firebase/app'
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -33,7 +34,7 @@ export default function LoginPage() {
     return () => unsubscribe()
   }, [router])
 
-  const handleEmailLogin = async (e) => {
+  const handleEmailLogin = async (e:FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setLoading(true)
     setError('')
@@ -41,7 +42,8 @@ export default function LoginPage() {
       await signInWithEmailAndPassword(auth, email, password)
       router.push('/overview')
     } catch (err) {
-      setError(err.message)
+      const error = err as FirebaseError
+      setError(error.message|| 'Failed to sign in. Please try again')
     } finally {
       setLoading(false)
     }
@@ -55,11 +57,16 @@ export default function LoginPage() {
       await signInWithPopup(auth, provider)
       router.push('/dashboard')
     } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
+      const error = err as FirebaseError
+     if (error.code === 'auth/popup-closed-by-user') {
+      setError('Sign-in popup was closed. Please try again.')
+    } else {
+      setError(error.message || 'Google sign-in failed.')
     }
+  } finally {
+    setLoading(false)
   }
+}
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-slate-800 flex items-center justify-center py-20">
