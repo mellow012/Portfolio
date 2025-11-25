@@ -1,1 +1,34 @@
 node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Next.js
+.next/
+out/
+build/
+.env.local
+.env
+
+# Vercel
+.vercel
+
+# Firebase
+.firebase
+
+# Misc
+.DS_Store
+*.pem
+*.log
+*.tsbuildinfo
+
+# Local dev
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# IDE
+*.sublime-project
+*.sublime-workspace
