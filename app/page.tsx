@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react'
 import {
   collection, getDocs, getDoc, doc, addDoc, updateDoc,
   increment, setDoc, serverTimestamp
@@ -130,7 +130,7 @@ function useToast() {
 }
 
 /* ─── Main HomePage Component ────────────────────── */
-export default function HomePage() {
+function PortfolioContent() {
   const auth = getAuth()
   const searchParams = useSearchParams()
   const { toasts, push: toast } = useToast()
@@ -1109,5 +1109,17 @@ function ProjectGallery({ images, title }: ProjectGalleryProps) {
         </>
       )}
     </div>
+  )
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#101415] flex items-center justify-center text-[#908fa0] text-sm">
+        Loading...
+      </div>
+    }>
+      <PortfolioContent />
+    </Suspense>
   )
 }
