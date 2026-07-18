@@ -168,7 +168,15 @@ export default function Navbar() {
           </div>
 
           {/* ── Right side ── */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
+            <Link
+              href="/#contact"
+              className="hidden md:inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider bg-[#c0c1ff]/10 hover:bg-[#c0c1ff]/20 text-[#c0c1ff] border border-[#c0c1ff]/25 transition-all duration-300 hover:scale-[1.02] active:scale-[0.97]"
+            >
+              <Mail className="h-3.5 w-3.5" />
+              Contact
+            </Link>
+
             {/* Admin logout button */}
             {isLoggedIn && (
               <motion.button

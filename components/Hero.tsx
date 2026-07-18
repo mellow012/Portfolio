@@ -234,7 +234,7 @@ export default function Hero() {
       <motion.div style={{ opacity }}
         className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-20"
       >
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 xl:gap-20 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-14 xl:gap-16 items-center">
 
           {/* ══════════════════
               LEFT — copy
@@ -243,13 +243,14 @@ export default function Hero() {
             initial="hidden"
             animate="visible"
             variants={{ visible: { transition: { staggerChildren: 0.09 } } }}
+            className="order-2 lg:order-1 lg:col-span-5 flex flex-col justify-center"
           >
             {/* Availability badge */}
             <motion.div
               variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}
               className="inline-flex items-center gap-2 px-3.5 py-1.5 mb-8
                          bg-emerald-500/10 border border-emerald-500/20 rounded-full
-                         text-xs font-medium text-emerald-400"
+                         text-xs font-medium text-emerald-400 self-start"
             >
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
@@ -264,20 +265,23 @@ export default function Hero() {
               className="text-5xl sm:text-6xl lg:text-7xl font-bold font-display text-foreground leading-[1.02] mb-6"
             >
               I build{' '}
-              <span className="gradient-text block">digital products</span>
+              <span className="gradient-text block sm:inline">digital products</span>{' '}
               that ship.
             </motion.h1>
 
             {/* Typewriter */}
             <motion.div
               variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}
-              className="flex items-center gap-2.5 mb-6 h-7"
+              className="flex items-center gap-2.5 mb-6 h-8 select-none"
             >
-              <Code2 className="h-4 w-4 text-[#c0c1ff] shrink-0" />
-              <span className="text-base text-muted-foreground font-medium">
-                {role}
-                <span className="ml-0.5 inline-block w-[2px] h-[1.1em] bg-[#c0c1ff] animate-pulse align-middle rounded-full" />
-              </span>
+              <div className="flex items-center gap-2 px-3 py-1 bg-black/35 backdrop-blur-md border border-[#464554]/50 rounded-xl text-[11px] font-mono text-[#c0c1ff] shadow-inner">
+                <span className="text-emerald-400">~</span>
+                <span className="text-[#908fa0]">via</span>
+                <span className="text-amber-400">⚡ node</span>
+                <span className="text-[#908fa0]">$</span>
+                <span className="text-white font-medium">{role}</span>
+                <span className="inline-block w-[1.5px] h-[1em] bg-[#c0c1ff] animate-pulse align-middle rounded-full" />
+              </div>
             </motion.div>
 
             {/* Bio */}
@@ -285,14 +289,112 @@ export default function Hero() {
               variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}
               className="text-[15px] text-[#908fa0] leading-relaxed max-w-lg mb-10"
             >
-              5+ years building booking systems, business platforms, and Android apps
-              for real clients. Based in Malawi · working worldwide.
+              5+ years building{' '}
+              <span className="text-foreground font-medium">booking systems</span>,{' '}
+              <span className="text-foreground font-medium">business platforms</span>, and{' '}
+              <span className="text-foreground font-medium">Android apps</span> for real clients. Based in{' '}
+              <span className="text-foreground font-medium">Malawi</span> · working worldwide.
             </motion.p>
 
-            {/* CTAs */}
+            {/* Socials & Tech Stack */}
             <motion.div
-              variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}
-              className="flex flex-wrap gap-3 mb-12"
+              variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
+              className="flex flex-wrap items-center gap-6"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-[#908fa0]">Find me on</span>
+                <div className="h-px w-6 bg-[#464554]" />
+                <div className="flex items-center gap-2">
+                  {socials.map(({ icon: Icon, href, label }) => (
+                    <motion.a
+                      key={label}
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      whileHover={{ scale: 1.12, y: -2 }}
+                      whileTap={{ scale: 0.9 }}
+                      className="w-9 h-9 rounded-xl bg-[#272a2c] border border-[#464554]
+                                 flex items-center justify-center text-[#908fa0]
+                                 hover:text-[#c0c1ff] hover:border-[#c0c1ff]/30 transition-colors"
+                      aria-label={label}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </motion.a>
+                  ))}
+                </div>
+              </div>
+
+              <div className="hidden sm:block h-6 w-px bg-[#464554]/60" />
+
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-[#908fa0]">Tech stack</span>
+                <div className="h-px w-6 bg-[#464554]" />
+                <div className="flex items-center gap-2">
+                  {[
+                    {
+                      name: 'Next.js',
+                      icon: (
+                        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M18.665 21.662l-8.73-11.238v7.502h1.666v3.298H7.135v-3.298h1.667v-11.23h-1.667V3.398h4.466l7.865 10.128V6.696h-1.666V3.398h4.466v3.298h-1.667v14.966h-1.667z"/>
+                        </svg>
+                      )
+                    },
+                    {
+                      name: 'React',
+                      icon: (
+                        <svg className="h-4.5 w-4.5 animate-[spin_10s_linear_infinite]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                          <ellipse cx="12" cy="12" rx="11" ry="5" transform="rotate(30 12 12)"/>
+                          <ellipse cx="12" cy="12" rx="11" ry="5" transform="rotate(90 12 12)"/>
+                          <ellipse cx="12" cy="12" rx="11" ry="5" transform="rotate(150 12 12)"/>
+                          <circle cx="12" cy="12" r="1.5"/>
+                        </svg>
+                      )
+                    },
+                    {
+                      name: 'TypeScript',
+                      icon: (
+                        <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M1.125 0h21.75c.621 0 1.125.504 1.125 1.125v21.75c0 .621-.504 1.125-1.125 1.125H1.125C.504 24 0 23.496 0 22.875V1.125C0 .504.504 0 1.125 0zm17.153 16.486c0-.962-.483-1.433-1.45-1.841-.968-.407-2.316-.761-3.663-1.009-.646-.124-1.157-.361-1.391-.652-.232-.289-.356-.639-.356-1.077 0-.497.199-.908.62-1.21.42-.303 1.054-.456 1.884-.456.846 0 1.484.188 1.9.562.416.375.642.868.679 1.484h2.909c-.048-1.417-.55-2.483-1.493-3.216-.948-.729-2.274-1.097-3.985-1.097-1.688 0-3.033.407-4.043 1.226-1.007.818-1.513 1.93-1.513 3.328 0 1.144.382 2.016 1.145 2.622.766.605 1.944 1.026 3.535 1.267.873.136 1.5.344 1.882.624.385.281.577.674.577 1.18 0 .543-.228.989-.684 1.341-.456.353-1.13.529-2.023.529-.982 0-1.745-.236-2.29-.714-.544-.476-.848-1.168-.909-2.08h-2.908c.073 1.68 1.05 3.128 2.874 3.916 1.121.488 2.378.729 3.774.729 2.052 0 3.655-.496 4.81-1.486 1.15-.992 1.728-2.32 1.728-3.992zm-8.835-9.845H6.26v2.531h2.226v8.438h3.188v-8.438h2.226V6.641z"/>
+                        </svg>
+                      )
+                    },
+                    {
+                      name: 'Android',
+                      icon: (
+                        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M17.523 15.3l1.816 3.146a.5.5 0 0 1-.866.5l-1.838-3.185a10.05 10.05 0 0 1-9.27 0l-1.838 3.185a.5.5 0 0 1-.866-.5L6.477 15.3A10.003 10.003 0 0 1 2 7.28a.5.5 0 0 1 1 0 9 9 0 0 0 18 0 .5.5 0 0 1 1 0 10.003 10.003 0 0 1-4.477 8.02zM7 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm10 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+                        </svg>
+                      )
+                    },
+                    {
+                      name: 'Firebase',
+                      icon: (
+                        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M3.89 15.672L6.124 1.458a.465.465 0 0 1 .865-.126l2.96 5.568zm14.394-.486l-2.072-3.957a.465.465 0 0 0-.82 0L12 17.57zM13.626 5.86l-2.316-4.44a.466.466 0 0 0-.825.006L3.109 17.15l8.986-5.048zM20.1 18.006l-1.996-12.8a.465.465 0 0 0-.79-.247L3.1 18.23l8.03 4.512a1.86 1.86 0 0 0 1.74 0z"/>
+                        </svg>
+                      )
+                    }
+                  ].map(({ name, icon }) => (
+                    <motion.div
+                      key={name}
+                      whileHover={{ scale: 1.12, y: -2 }}
+                      whileTap={{ scale: 0.9 }}
+                      className="w-9 h-9 rounded-xl bg-[#272a2c] border border-[#464554]
+                                 flex items-center justify-center text-[#908fa0]
+                                 hover:text-[#c0c1ff] hover:border-[#c0c1ff]/30 transition-all cursor-default"
+                      title={name}
+                    >
+                      {icon}
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+
+            {/* CTA — View my work */}
+            <motion.div
+              variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
+              className="mt-8 self-start"
             >
               <Link
                 href="/#projects"
@@ -303,38 +405,23 @@ export default function Hero() {
                 View my work
                 <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
               </Link>
-              <Link
-                href="/#contact"
-                className="inline-flex items-center gap-2 px-6 py-3.5
-                           bg-[#272a2c] border border-[#464554] rounded-xl font-medium text-sm
-                           text-foreground hover:bg-[#323537] transition-all active:scale-[0.97]"
-              >
-                Let's talk
-              </Link>
             </motion.div>
 
-            {/* Socials */}
+            {/* Profile Stats */}
             <motion.div
-              variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
-              className="flex items-center gap-3"
+              variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
+              className="grid grid-cols-3 gap-3.5 mt-10 pt-8 border-t border-[#464554]/30 w-full max-w-md"
             >
-              <span className="text-xs text-[#908fa0]">Find me on</span>
-              <div className="h-px w-6 bg-[#464554]" />
-              {socials.map(({ icon: Icon, href, label }) => (
-                <motion.a
-                  key={label}
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  whileHover={{ scale: 1.12, y: -2 }}
-                  whileTap={{ scale: 0.9 }}
-                  className="w-9 h-9 rounded-xl bg-[#272a2c] border border-[#464554]
-                             flex items-center justify-center text-[#908fa0]
-                             hover:text-[#c0c1ff] hover:border-[#c0c1ff]/30 transition-colors"
-                  aria-label={label}
+              {[{ n: 15, label: 'Clients' }, { n: 10, label: 'Projects' }, { n: 5, label: 'Years' }].map((s) => (
+                <div
+                  key={s.label}
+                  className="flex flex-col p-3.5 bg-white/[0.02] border border-white/[0.05] rounded-2xl hover:border-[#c0c1ff]/20 hover:bg-white/[0.04] transition-all duration-300 group"
                 >
-                  <Icon className="h-4 w-4" />
-                </motion.a>
+                  <span className="text-2xl font-bold text-foreground font-display leading-none tracking-tight group-hover:text-[#c0c1ff] transition-colors">
+                    <Counter end={s.n} suffix="+" />
+                  </span>
+                  <span className="text-[10px] text-[#908fa0] mt-1.5 uppercase tracking-wider font-semibold">{s.label}</span>
+                </div>
               ))}
             </motion.div>
           </motion.div>
@@ -346,61 +433,55 @@ export default function Hero() {
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.75, ease: [0.4, 0, 0.2, 1] as [number,number,number,number], delay: 0.25 }}
-            className="relative"
+            className="order-1 lg:order-2 relative lg:col-span-7 w-full"
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
           >
-            {/* ── Main card ── */}
-            <div className="relative rounded-2xl overflow-hidden bg-[#272a2c] border border-[#464554]
-                            shadow-2xl shadow-black/12">
+            {/* ── Main card (Browser Mockup) ── */}
+            <div className="relative rounded-2xl overflow-hidden bg-[#1e2123] border border-[#464554]/55
+                            shadow-2xl shadow-black/35 group transition-all duration-300 hover:border-[#c0c1ff]/30">
 
-              {/* Image with cross-fade */}
-              <div className="relative h-56 sm:h-64 bg-muted overflow-hidden">
+              {/* Browser Mockup Title Bar */}
+              <div className="flex items-center justify-between px-4 py-3.5 bg-[#191b1d] border-b border-[#464554]/45">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f56]/90 shadow-sm" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]/90 shadow-sm" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#27c93f]/90 shadow-sm" />
+                </div>
+                <div className="flex-1 max-w-[260px] mx-auto">
+                  <div className="px-3 py-1 bg-[#101213] rounded-md text-[10px] text-[#908fa0]/80 border border-[#464554]/30 truncate text-center select-none font-mono">
+                    mellowverse.dev/{current ? current.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') : 'project'}
+                  </div>
+                </div>
+                <div className="w-12" /> {/* alignment balance */}
+              </div>
+
+              {/* Image window */}
+              <div className="relative aspect-[16/10] bg-[#151718] overflow-hidden">
                 <AnimatePresence mode="wait">
                   <motion.img
                     key={activeProject + '-img'}
-                    src={displayProjects[activeProject]?.image}
-                    alt={displayProjects[activeProject]?.title}
-                    initial={{ opacity: 0, scale: 1.04 }}
+                    src={current?.image}
+                    alt={current?.title}
+                    initial={{ opacity: 0, scale: 1.02 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.55, ease: [0.4, 0, 0.2, 1] as [number,number,number,number] }}
-                    className="absolute inset-0 w-full h-full object-cover"
+                    transition={{ duration: 0.45, ease: [0.4, 0, 0.2, 1] as [number,number,number,number] }}
+                    className="absolute inset-0 w-full h-full object-cover select-none"
                   />
                 </AnimatePresence>
 
-                {/* Dark gradient for text legibility */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                {/* Gradient vignette overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10 pointer-events-none" />
 
-                {/* Bottom overlay — category + project number */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 flex items-end justify-between">
-                  <AnimatePresence mode="wait">
-                    <motion.span
-                      key={activeProject + '-cat'}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -8 }}
-                      transition={{ duration: 0.3 }}
-                      className="px-2.5 py-1 bg-white/15 backdrop-blur-md border border-white/20
-                                 rounded-full text-[11px] font-medium text-white"
-                    >
-                      {displayProjects[activeProject]?.category}
-                    </motion.span>
-                  </AnimatePresence>
-                  <span className="text-[11px] text-white/60 font-medium tabular-nums">
-                    {String(activeProject + 1).padStart(2, '0')} / {String(displayProjects.length).padStart(2, '0')}
-                  </span>
-                </div>
-
-                {/* Nav arrows — appear on hover */}
+                {/* Nav arrows — hover state */}
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); goPrev() }}
-                  className="absolute left-3 top-1/2 -translate-y-1/2
-                             w-8 h-8 bg-black/30 hover:bg-black/50 backdrop-blur-sm
+                  className="absolute left-4 top-1/2 -translate-y-1/2
+                             w-9 h-9 bg-black/45 hover:bg-black/65 backdrop-blur-md
                              rounded-full flex items-center justify-center
-                             text-white transition-all opacity-0 group-hover:opacity-100
-                             [.group:hover_&]:opacity-100"
+                             text-white transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
                   aria-label="Previous project"
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -408,10 +489,10 @@ export default function Hero() {
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); goNext() }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2
-                             w-8 h-8 bg-black/30 hover:bg-black/50 backdrop-blur-sm
+                  className="absolute right-4 top-1/2 -translate-y-1/2
+                             w-9 h-9 bg-black/45 hover:bg-black/65 backdrop-blur-md
                              rounded-full flex items-center justify-center
-                             text-white transition-all"
+                             text-white transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
                   aria-label="Next project"
                 >
                   <ChevronRight className="h-4 w-4" />
@@ -419,71 +500,75 @@ export default function Hero() {
               </div>
 
               {/* Card body */}
-              <div className="p-5">
+              <div className="p-6 sm:p-7 bg-[#1e2123]">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={activeProject + '-body'}
-                    initial={{ opacity: 0, y: 8 }}
+                    initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.3 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.25 }}
                   >
-                    <div className="flex items-start justify-between gap-3 mb-2">
-                      <h3 className="text-base font-bold text-foreground leading-snug line-clamp-1">
-                        {displayProjects[activeProject]?.title}
-                      </h3>
-                      {/* External link buttons — <button> not <a>, card is inside no outer Link */}
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
+                      <div>
+                        {/* Tag/Category & Slide Counter */}
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="px-2.5 py-0.5 bg-[#c0c1ff]/10 text-[#c0c1ff] text-[10px] font-semibold uppercase tracking-wider rounded-md border border-[#c0c1ff]/15">
+                            {current?.category}
+                          </span>
+                          <span className="text-[10px] text-[#908fa0] font-medium tabular-nums">
+                            {String(activeProject + 1).padStart(2, '0')} / {String(displayProjects.length).padStart(2, '0')}
+                          </span>
+                        </div>
+                        <h3 className="text-lg sm:text-xl font-bold text-foreground tracking-tight leading-snug">
+                          {current?.title}
+                        </h3>
+                      </div>
+
+                      {/* Action buttons */}
                       <div className="flex items-center gap-1.5 shrink-0">
-                        {displayProjects[activeProject]?.githubUrl && (
+                        {current?.githubUrl && (
                           <button
                             type="button"
-                            onClick={() => window.open(displayProjects[activeProject].githubUrl, '_blank', 'noopener,noreferrer')}
-                            className="w-7 h-7 rounded-lg bg-[#323537] hover:bg-[#c0c1ff]/10 hover:text-[#c0c1ff]
-                                       text-[#908fa0] flex items-center justify-center transition-colors"
-                            aria-label="GitHub"
+                            onClick={() => window.open(current.githubUrl, '_blank', 'noopener,noreferrer')}
+                            className="w-8 h-8 rounded-lg bg-[#2b2f31] hover:bg-[#c0c1ff]/10 hover:text-[#c0c1ff]
+                                       text-[#908fa0] flex items-center justify-center transition-colors border border-[#464554]/45"
+                            aria-label="GitHub repository"
                           >
-                            <Github className="h-3.5 w-3.5" />
+                            <Github className="h-4 w-4" />
                           </button>
                         )}
-                        {displayProjects[activeProject]?.liveUrl && (
+                        {current?.liveUrl && (
                           <button
                             type="button"
-                            onClick={() => window.open(displayProjects[activeProject].liveUrl, '_blank', 'noopener,noreferrer')}
-                            className="w-7 h-7 rounded-lg bg-[#c0c1ff]/10 hover:bg-[#c0c1ff]/20
-                                       text-[#c0c1ff] flex items-center justify-center transition-colors"
+                            onClick={() => window.open(current.liveUrl, '_blank', 'noopener,noreferrer')}
+                            className="w-8 h-8 rounded-lg bg-[#c0c1ff]/10 hover:bg-[#c0c1ff]/20
+                                       text-[#c0c1ff] flex items-center justify-center transition-colors border border-[#c0c1ff]/25"
                             aria-label="Live demo"
                           >
-                            <ExternalLink className="h-3.5 w-3.5" />
+                            <ExternalLink className="h-4 w-4" />
                           </button>
                         )}
                       </div>
                     </div>
 
-                    <p className="text-xs text-[#908fa0] leading-relaxed mb-4 line-clamp-2">
-                      {displayProjects[activeProject]?.summary}
+                    <p className="text-xs sm:text-sm text-[#908fa0] leading-relaxed mb-5 line-clamp-2">
+                      {current?.summary}
                     </p>
 
-                    <div className="flex flex-wrap gap-1.5">
-                      {(displayProjects[activeProject]?.tags || []).slice(0, 4).map((tag) => (
-                        <span key={tag}
-                          className="px-2.5 py-0.5 bg-[#c0c1ff]/10 text-[#c0c1ff] text-[11px] rounded-lg font-medium">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
                   </motion.div>
                 </AnimatePresence>
 
                 {/* Footer: progress dots + view link */}
-                <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#464554]">
+                <div className="flex items-center justify-between pt-5 border-t border-[#464554]/45">
                   {/* Dot indicators with progress bar */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2.5">
                     {displayProjects.map((_, i) => (
                       <button
                         key={i}
                         type="button"
                         onClick={() => goTo(i)}
-                        className="group/dot relative"
+                        className="group/dot relative py-1"
                         aria-label={`Go to project ${i + 1}`}
                       >
                         {i === activeProject ? (
@@ -501,20 +586,20 @@ export default function Hero() {
                   {!isFallback && current ? (
                     <Link
                       href={`/?project=${current.id}`}
-                      className="inline-flex items-center gap-1 text-[11px] font-semibold
-                                 text-[#c0c1ff] hover:underline underline-offset-2"
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold
+                                 text-[#c0c1ff] hover:text-white transition-colors"
                     >
                       View project
-                      <ArrowUpRight className="h-3 w-3" />
+                      <ArrowUpRight className="h-3.5 w-3.5" />
                     </Link>
                   ) : (
                     <Link
                       href="/#projects"
-                      className="inline-flex items-center gap-1 text-[11px] font-semibold
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold
                                  text-[#908fa0] hover:text-[#c0c1ff] transition-colors"
                     >
                       See all projects
-                      <ArrowUpRight className="h-3 w-3" />
+                      <ArrowUpRight className="h-3.5 w-3.5" />
                     </Link>
                   )}
                 </div>
@@ -526,41 +611,18 @@ export default function Hero() {
               initial={{ opacity: 0, scale: 0.8, y: 12 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               transition={{ delay: 1.0, duration: 0.5 }}
-              className="absolute -top-4 -right-4 bg-[rgba(29,32,34,0.7)] backdrop-blur-[20px] rounded-2xl p-3.5 shadow-xl
+              className="absolute -top-6 -right-6 bg-[#1a1c1d]/90 backdrop-blur-md rounded-2xl p-4 shadow-2xl
                          hidden sm:block border border-white/10 z-10"
             >
-              <p className="text-[10px] font-semibold text-foreground mb-2 flex items-center gap-1.5 uppercase tracking-wider">
-                <Sparkles className="h-3 w-3 text-[#c0c1ff]" />
-                Stack
+              <p className="text-[10px] font-bold text-foreground mb-2.5 flex items-center gap-1.5 uppercase tracking-wider">
+                <Sparkles className="h-3.5 w-3.5 text-[#c0c1ff]" />
+                Main Stack
               </p>
-              <div className="flex flex-wrap gap-1 max-w-[148px]">
+              <div className="flex flex-wrap gap-1.5 max-w-[148px]">
                 {['Next.js', 'Firebase', 'Kotlin', 'TypeScript'].map((t) => (
-                  <span key={t} className="px-2 py-0.5 bg-[#c0c1ff]/10 text-[#c0c1ff] text-[10px] rounded-md font-medium">
+                  <span key={t} className="px-2 py-0.5 bg-[#c0c1ff]/10 text-[#c0c1ff] text-[10px] rounded-md font-medium border border-[#c0c1ff]/15">
                     {t}
                   </span>
-                ))}
-              </div>
-            </motion.div>
-
-            {/* ── Floating chip — Stats ── */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8, y: -12 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ delay: 1.2, duration: 0.5 }}
-              className="absolute -bottom-4 -left-4 bg-[rgba(29,32,34,0.7)] backdrop-blur-[20px] rounded-2xl p-3.5 shadow-xl
-                         hidden sm:block border border-white/10 z-10"
-            >
-              <div className="flex items-center gap-5">
-                {[{ n: 15, label: 'Clients' }, { n: 10, label: 'Projects' }, { n: 5, label: 'Years' }].map((s, i, arr) => (
-                  <div key={s.label} className="flex items-center gap-5">
-                    <div className="text-center">
-                      <p className="text-lg font-bold text-foreground leading-none tabular-nums">
-                        <Counter end={s.n} suffix="+" />
-                      </p>
-                      <p className="text-[10px] text-[#908fa0] mt-0.5">{s.label}</p>
-                    </div>
-                    {i < arr.length - 1 && <div className="h-7 w-px bg-[#464554]" />}
-                  </div>
                 ))}
               </div>
             </motion.div>

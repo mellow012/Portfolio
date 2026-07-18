@@ -15,7 +15,7 @@ import {
   CheckCircle2, Zap, Shield, Globe, Heart, Eye, ExternalLink,
   Github, Sparkles, MapPin, Mail, Phone, MessageCircle,
   Linkedin, Twitter, Send, Loader2, X, AlertCircle, Award,
-  Database, Figma, Terminal, Code, Cpu, ChevronLeft, ChevronRight, Download
+  Database, Figma, Terminal, Code, Cpu, ChevronLeft, ChevronRight, Download, User as UserIcon
 } from 'lucide-react'
 import Hero from '../components/Hero'
 
@@ -65,6 +65,14 @@ interface Experience {
   description?: string
 }
 
+interface Academic {
+  id: string
+  degree: string
+  institution: string
+  period: string
+  description?: string
+}
+
 interface Skill {
   id: string
   name: string
@@ -79,10 +87,11 @@ interface Toast {
 }
 
 const CATEGORIES = [
-  { id: 'all',       label: 'All Projects', icon: Globe      },
-  { id: 'web',       label: 'Web Platforms', icon: Code       },
-  { id: 'mobile',    label: 'Mobile Apps',   icon: Smartphone },
-  { id: 'fullstack', label: 'Full Stack',    icon: Database   },
+  { id: 'all', label: 'All Projects', icon: Globe },
+  { id: 'web', label: 'Web Platforms', icon: Code },
+  { id: 'mobile', label: 'Mobile Apps', icon: Smartphone },
+  { id: 'fullstack', label: 'Full Stack', icon: Database },
+  { id: 'design', label: 'Design', icon: Figma },
 ]
 
 const TECH_CATEGORIES = [
@@ -150,7 +159,7 @@ function PortfolioContent() {
       twitter: 'https://twitter.com'
     }
   })
-  
+
   const [experiences, setExperiences] = useState<Experience[]>([
     {
       id: 'exp1',
@@ -174,16 +183,42 @@ function PortfolioContent() {
       description: 'Built a real-time fleet coordinates tracker using Android SDK maps integration and Firebase Realtime Database for live telemetry.'
     }
   ])
-  
+
+  const [academics, setAcademics] = useState<Academic[]>([
+    {
+      id: 'acad1',
+      degree: 'BSc in Computer Engineering',
+      institution: 'University of Malawi',
+      period: '2019 - 2023',
+      description: 'Focused on distributed systems, hardware integration, mobile application architecture, and algorithm design.'
+    },
+    {
+      id: 'acad2',
+      degree: 'Google Associate Android Developer',
+      institution: 'Google Developers Certification',
+      period: '2022',
+      description: 'Certified in building robust native Android applications using Kotlin, Jetpack libraries, and API connections.'
+    }
+  ])
+
+  const [activeTab, setActiveTab] = useState<'overview' | 'skills' | 'experience' | 'academics'>('overview')
+
   const [skills, setSkills] = useState<Skill[]>([])
   const [projects, setProjects] = useState<Project[]>([])
-  
+
   const [loadingProjects, setLoadingProjects] = useState(true)
   const [user, setUser] = useState<User | null>(null)
   const [likedProjects, setLikedProjects] = useState<Set<string>>(new Set())
   const [activeCategory, setActiveCategory] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const PROJECTS_PER_PAGE = 6
+
+  // Reset pagination on filter or search query change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [activeCategory, searchQuery])
 
   // Form State
   const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' })
@@ -251,6 +286,20 @@ function PortfolioContent() {
         }
       } catch { /* Fallback to default state */ }
 
+      // Fetch Academic Items
+      try {
+        const acadSnap = await getDocs(collection(db, 'users', ADMIN_UID, 'academics'))
+        if (!acadSnap.empty) {
+          setAcademics(acadSnap.docs.map(d => ({
+            id: d.id,
+            degree: d.data().degree || '',
+            institution: d.data().institution || '',
+            period: d.data().period || '',
+            description: d.data().description || ''
+          })))
+        }
+      } catch { /* Fallback to default state */ }
+
       // Fetch Projects
       setLoadingProjects(true)
       try {
@@ -265,7 +314,7 @@ function PortfolioContent() {
           if (matched) {
             setSelectedProject(matched)
             // Increment view count when modal is opened on query param match
-            updateDoc(doc(db, 'projects', matched.id), { views: increment(1) }).catch(() => {})
+            updateDoc(doc(db, 'projects', matched.id), { views: increment(1) }).catch(() => { })
           }
         }
       } catch {
@@ -289,6 +338,12 @@ function PortfolioContent() {
       (p.tags || []).some((tag) => tag.toLowerCase().includes(q))
     return matchCat && matchSearch
   })
+
+  const totalPages = Math.ceil(filteredProjects.length / PROJECTS_PER_PAGE)
+  const paginatedProjects = filteredProjects.slice(
+    (currentPage - 1) * PROJECTS_PER_PAGE,
+    currentPage * PROJECTS_PER_PAGE
+  )
 
   // 4. Handlers
   const handleLike = async (e: React.MouseEvent, project: Project) => {
@@ -374,7 +429,7 @@ function PortfolioContent() {
 
   return (
     <div className="min-h-screen bg-[#101415] text-[#e0e3e5] relative overflow-hidden select-none">
-      
+
       {/* Background Ambience */}
       <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-[#c0c1ff]/5 rounded-full blur-[160px] pointer-events-none" />
       <div className="absolute bottom-[10%] right-[-10%] w-[600px] h-[600px] bg-rose-500/5 rounded-full blur-[200px] pointer-events-none" />
@@ -392,14 +447,14 @@ function PortfolioContent() {
               className={`flex items-center gap-2.5 px-4.5 py-3.5 rounded-2xl shadow-2xl border
                           text-sm font-semibold backdrop-blur-xl pointer-events-auto
                           ${t.type === 'success'
-                            ? 'bg-emerald-500/15 border-emerald-500/20 text-emerald-400'
-                            : t.type === 'error'
-                            ? 'bg-rose-500/15 border-rose-500/20 text-rose-400'
-                            : 'bg-[#191c1e] border-[#464554]/60 text-[#c0c1ff]'}`}
+                  ? 'bg-emerald-500/15 border-emerald-500/20 text-emerald-400'
+                  : t.type === 'error'
+                    ? 'bg-rose-500/15 border-rose-500/20 text-rose-400'
+                    : 'bg-[#191c1e] border-[#464554]/60 text-[#c0c1ff]'}`}
             >
               {t.type === 'success' ? <CheckCircle2 className="h-4.5 w-4.5 shrink-0" />
-               : t.type === 'error' ? <AlertCircle className="h-4.5 w-4.5 shrink-0" />
-                                    : <Sparkles className="h-4.5 w-4.5 shrink-0" />}
+                : t.type === 'error' ? <AlertCircle className="h-4.5 w-4.5 shrink-0" />
+                  : <Sparkles className="h-4.5 w-4.5 shrink-0" />}
               {t.message}
             </motion.div>
           ))}
@@ -414,96 +469,247 @@ function PortfolioContent() {
       {/* 2. About Me Section */}
       <section id="about" className="py-28 relative border-t border-[#464554]/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+          {/* About Me Pill (Top-Left of the entire section) */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="mb-12"
+          >
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-[#c0c1ff]/10 text-[#c0c1ff]
+                            rounded-full text-xs font-semibold border border-[#c0c1ff]/20">
+              <Award className="h-3.5 w-3.5" />
+              About Me
+            </div>
+          </motion.div>
+
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
-            
-            {/* Bio Column */}
+
+            {/* Left Column — Profile Image & Quick Details */}
             <motion.div
-              initial={{ opacity: 0, x: -24 }}
-              whileInView={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="lg:col-span-5"
+              className="lg:col-span-5 space-y-6"
             >
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-[#c0c1ff]/10 text-[#c0c1ff]
-                              rounded-full text-xs font-semibold mb-6 border border-[#c0c1ff]/20">
-                <Award className="h-3.5 w-3.5" />
-                About Me
-              </div>
-              <h2 className="text-4xl sm:text-5xl font-extrabold text-white mb-6 leading-tight">
-                Engineering with <br />
-                <span className="gradient-text">Purpose</span> & Accuracy
-              </h2>
-              
-              <div className="space-y-5 text-[#908fa0] leading-relaxed text-sm sm:text-base">
-                <p>{profile.bio}</p>
-                <div className="flex items-center gap-3.5 py-1 text-white">
-                  <MapPin className="h-5 w-5 text-[#c0c1ff] shrink-0" />
-                  <span className="font-medium text-sm">{profile.location}</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <span className="relative flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                  </span>
-                  <span className="text-xs font-semibold text-emerald-400">
-                    Active for contract & full-time roles
-                  </span>
+              {/* Profile Image Card */}
+              <div className="relative rounded-3xl overflow-hidden bg-[#191c1e] border border-[#464554]/50 p-3 group transition-all duration-300 hover:border-[#c0c1ff]/30 hover:shadow-2xl hover:shadow-[#c0c1ff]/5">
+                <div className="relative aspect-square rounded-2xl overflow-hidden bg-[#101415]">
+                  {profile.profileImage ? (
+                    <img
+                      src={profile.profileImage}
+                      alt={profile.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      onError={(el) => { (el.target as HTMLImageElement).src = '/placeholder.png' }}
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-[#c0c1ff]/15 to-rose-500/5 flex flex-col items-center justify-center gap-3">
+                      <div className="p-4 bg-[#c0c1ff]/10 rounded-full border border-[#c0c1ff]/20 text-[#c0c1ff]">
+                        <UserIcon className="h-10 w-10" />
+                      </div>
+                      <span className="text-xs text-[#908fa0] font-medium">No profile photo loaded</span>
+                    </div>
+                  )}
+                  {/* Subtle inner shadow overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
                 </div>
               </div>
 
-              {profile.resumeUrl && (
-                <div className="mt-8">
-                  <Link
-                    href={profile.resumeUrl}
-                    target="_blank"
-                    className="inline-flex items-center gap-2.5 px-6 py-3 bg-[#272a2c] hover:bg-[#323537]
-                               text-[#e0e3e5] border border-[#464554] rounded-xl text-sm font-semibold
-                               transition-all active:scale-[0.98]"
-                  >
-                    <Download className="h-4.5 w-4.5" />
-                    Get Resumé
-                  </Link>
+              {/* Info Details Card */}
+              <div className="bg-[#191c1e] border border-[#464554]/40 rounded-3xl p-6 space-y-4">
+                <div className="flex items-center gap-3.5 py-1 text-white">
+                  <div className="p-2 bg-[#c0c1ff]/10 rounded-xl text-[#c0c1ff] border border-[#c0c1ff]/10">
+                    <MapPin className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase font-bold text-[#908fa0] tracking-wider">Location</p>
+                    <p className="text-sm font-semibold">{profile.location}</p>
+                  </div>
                 </div>
-              )}
+
+                <div className="flex items-center gap-3.5 py-1">
+                  <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-400 border border-emerald-500/10">
+                    <span className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500" />
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase font-bold text-[#908fa0] tracking-wider">Availability</p>
+                    <p className="text-sm font-semibold text-emerald-400">Available for contract & remote roles</p>
+                  </div>
+                </div>
+              </div>
             </motion.div>
 
-            {/* Experience Timeline Column */}
+            {/* Right Column — Biography & Tabbed Details */}
             <motion.div
-              initial={{ opacity: 0, x: 24 }}
-              whileInView={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="lg:col-span-7 space-y-6"
+              transition={{ duration: 0.6, delay: 0.15 }}
+              className="lg:col-span-7 space-y-8"
             >
-              <h3 className="text-lg font-bold text-white uppercase tracking-wider mb-6 border-b border-[#464554]/20 pb-3">
-                Experience Timeline
-              </h3>
-              
-              <div className="relative border-l border-[#464554]/50 ml-3 pl-8 space-y-10">
-                {experiences.map((exp, i) => (
-                  <div key={exp.id} className="relative">
-                    {/* Dot */}
-                    <span className="absolute -left-[41px] top-1.5 w-6 h-6 rounded-full bg-[#101415]
-                                     border-2 border-[#c0c1ff] flex items-center justify-center">
-                      <span className="w-1.5 h-1.5 bg-[#c0c1ff] rounded-full" />
-                    </span>
-                    <span className="text-xs font-semibold text-[#c0c1ff] bg-[#c0c1ff]/10
-                                     px-2.5 py-1 rounded-md border border-[#c0c1ff]/10">
-                      {exp.period}
-                    </span>
-                    <h4 className="text-lg font-bold text-white mt-3.5 mb-1">
-                      {exp.title}
-                    </h4>
-                    <p className="text-xs text-[#908fa0] font-medium mb-3">
-                      {exp.company}
-                    </p>
-                    {exp.description && (
-                      <p className="text-xs sm:text-sm text-[#908fa0] leading-relaxed">
-                        {exp.description}
-                      </p>
+              {/* Tab Navigation Headers */}
+              <div className="flex flex-wrap gap-2 p-1.5 bg-[#191c1e] border border-[#464554]/55 rounded-2xl max-w-lg">
+                {[
+                  { id: 'overview', label: 'Overview' },
+                  { id: 'academics', label: 'Academics' },
+                  { id: 'skills', label: 'Skills' },
+                  { id: 'experience', label: 'Experience' }
+                ].map((tab) => {
+                  const isActive = activeTab === tab.id
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id as any)}
+                      className={`relative px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 ${isActive
+                          ? 'text-[#1000a9] z-10'
+                          : 'text-[#908fa0] hover:text-white'
+                        }`}
+                    >
+                      {isActive && (
+                        <motion.span
+                          layoutId="about-active-tab-indicator"
+                          className="absolute inset-0 bg-[#c0c1ff] rounded-xl"
+                          transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                        />
+                      )}
+                      <span className="relative z-20">{tab.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Tab Content Display */}
+              <div className="min-h-[280px]">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={activeTab}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.25 }}
+                  >
+                    {activeTab === 'overview' && (
+                      <div className="space-y-6">
+                        <p className="text-[#908fa0] leading-relaxed text-sm sm:text-base whitespace-pre-line">
+                          {profile.bio}
+                        </p>
+                        {profile.resumeUrl && (
+                          <div className="pt-2">
+                            <Link
+                              href={profile.resumeUrl}
+                              target="_blank"
+                              className="inline-flex items-center gap-2.5 px-6 py-3.5 bg-[#272a2c] hover:bg-[#323537]
+                                         text-[#e0e3e5] border border-[#464554] rounded-xl text-sm font-semibold
+                                         transition-all active:scale-[0.98] hover:border-[#c0c1ff]/30"
+                            >
+                              <Download className="h-4.5 w-4.5" />
+                              Get Resumé
+                            </Link>
+                          </div>
+                        )}
+                      </div>
                     )}
-                  </div>
-                ))}
+
+                    {activeTab === 'academics' && (
+                      <div className="space-y-6">
+                        <div className="relative border-l border-[#464554]/50 ml-3 pl-8 space-y-10">
+                          {academics.map((acad) => (
+                            <div key={acad.id} className="relative">
+                              <span className="absolute -left-[41px] top-1.5 w-6 h-6 rounded-full bg-[#101415]
+                                               border-2 border-[#c0c1ff] flex items-center justify-center">
+                                <span className="w-1.5 h-1.5 bg-[#c0c1ff] rounded-full" />
+                              </span>
+                              <span className="text-xs font-semibold text-[#c0c1ff] bg-[#c0c1ff]/10
+                                               px-2.5 py-1 rounded-md border border-[#c0c1ff]/10">
+                                {acad.period}
+                              </span>
+                              <h4 className="text-lg font-bold text-white mt-3.5 mb-1">
+                                {acad.degree}
+                              </h4>
+                              <p className="text-xs text-[#908fa0] font-medium mb-3">
+                                {acad.institution}
+                              </p>
+                              {acad.description && (
+                                <p className="text-xs sm:text-sm text-[#908fa0] leading-relaxed">
+                                  {acad.description}
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {activeTab === 'skills' && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {TECH_CATEGORIES.map((cat) => {
+                          const Icon = cat.icon
+                          return (
+                            <div
+                              key={cat.title}
+                              className="bg-[#191c1e] border border-[#464554]/40 rounded-2xl p-5 hover:border-[#c0c1ff]/20 transition-all duration-300"
+                            >
+                              <div className="flex items-center gap-3 mb-4">
+                                <div className={`p-1.5 rounded-lg border ${cat.accent}`}>
+                                  <Icon className="h-4 w-4" />
+                                </div>
+                                <h4 className="font-bold text-white text-sm">
+                                  {cat.title}
+                                </h4>
+                              </div>
+                              <div className="flex flex-wrap gap-1.5">
+                                {cat.skills.map((skill) => (
+                                  <span
+                                    key={skill}
+                                    className="px-2.5 py-1 bg-[#101415] border border-[#464554]/30 rounded-lg text-[11px] font-semibold text-[#e0e3e5]"
+                                  >
+                                    {skill}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+
+                    {activeTab === 'experience' && (
+                      <div className="space-y-6">
+                        <div className="relative border-l border-[#464554]/50 ml-3 pl-8 space-y-10">
+                          {experiences.map((exp) => (
+                            <div key={exp.id} className="relative">
+                              <span className="absolute -left-[41px] top-1.5 w-6 h-6 rounded-full bg-[#101415]
+                                               border-2 border-[#c0c1ff] flex items-center justify-center">
+                                <span className="w-1.5 h-1.5 bg-[#c0c1ff] rounded-full" />
+                              </span>
+                              <span className="text-xs font-semibold text-[#c0c1ff] bg-[#c0c1ff]/10
+                                               px-2.5 py-1 rounded-md border border-[#c0c1ff]/10">
+                                {exp.period}
+                              </span>
+                              <h4 className="text-lg font-bold text-white mt-3.5 mb-1">
+                                {exp.title}
+                              </h4>
+                              <p className="text-xs text-[#908fa0] font-medium mb-3">
+                                {exp.company}
+                              </p>
+                              {exp.description && (
+                                <p className="text-xs sm:text-sm text-[#908fa0] leading-relaxed">
+                                  {exp.description}
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                </AnimatePresence>
               </div>
             </motion.div>
 
@@ -514,7 +720,7 @@ function PortfolioContent() {
       {/* 3. Featured Projects Section */}
       <section id="projects" className="py-28 relative border-t border-[#464554]/30 bg-[#0d0f10]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -548,7 +754,7 @@ function PortfolioContent() {
           </motion.div>
 
           {/* Categories Filter Tabs */}
-          <div className="flex flex-wrap gap-2.5 mb-10 pb-2 border-b border-[#464554]/20">
+          <div className="flex flex-wrap justify-center gap-3.5 mb-12 pb-4 border-b border-[#464554]/20">
             {CATEGORIES.map((cat) => {
               const Icon = cat.icon
               const isSelected = activeCategory === cat.id
@@ -556,10 +762,10 @@ function PortfolioContent() {
                 <button
                   key={cat.id}
                   onClick={() => setActiveCategory(cat.id)}
-                  className={`flex items-center gap-2 px-4.5 py-2.5 rounded-xl text-xs font-semibold transition-all
-                              ${isSelected 
-                                ? 'bg-[#c0c1ff] text-[#1000a9] shadow-lg shadow-[#c0c1ff]/15'
-                                : 'bg-[#191c1e] text-[#908fa0] hover:text-white border border-[#464554]/40 hover:bg-[#272a2c]'}`}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 hover:scale-[1.02] active:scale-[0.97]
+                              ${isSelected
+                      ? 'bg-[#c0c1ff] text-[#1000a9] shadow-lg shadow-[#c0c1ff]/15'
+                      : 'bg-[#191c1e] text-[#908fa0] hover:text-white border border-[#464554]/40 hover:bg-[#272a2c]'}`}
                 >
                   <Icon className="h-3.5 w-3.5" />
                   {cat.label}
@@ -574,8 +780,8 @@ function PortfolioContent() {
               Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="bg-[#191c1e] border border-[#464554]/50 rounded-3xl h-[360px] animate-pulse" />
               ))
-            ) : filteredProjects.length > 0 ? (
-              filteredProjects.map((project) => (
+            ) : paginatedProjects.length > 0 ? (
+              paginatedProjects.map((project) => (
                 <motion.div
                   key={project.id}
                   onClick={() => openProjectModal(project)}
@@ -655,13 +861,66 @@ function PortfolioContent() {
             )}
           </div>
 
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-2.5 mt-12">
+              <button
+                type="button"
+                disabled={currentPage === 1}
+                onClick={() => {
+                  setCurrentPage((p) => Math.max(p - 1, 1))
+                  document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' })
+                }}
+                className="p-2.5 rounded-xl bg-[#191c1e] text-[#908fa0] hover:text-white border border-[#464554]/40 hover:bg-[#272a2c] disabled:opacity-30 disabled:pointer-events-none transition-all duration-200"
+                aria-label="Previous page"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+
+              {Array.from({ length: totalPages }).map((_, i) => {
+                const pageNum = i + 1
+                const isActive = currentPage === pageNum
+                return (
+                  <button
+                    key={pageNum}
+                    type="button"
+                    onClick={() => {
+                      setCurrentPage(pageNum)
+                      document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' })
+                    }}
+                    className={`w-10 h-10 rounded-xl text-xs font-bold transition-all duration-200 hover:scale-[1.05] active:scale-[0.95] ${
+                      isActive
+                        ? 'bg-[#c0c1ff] text-[#1000a9] shadow-lg shadow-[#c0c1ff]/15'
+                        : 'bg-[#191c1e] text-[#908fa0] hover:text-white border border-[#464554]/40 hover:bg-[#272a2c]'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                )
+              })}
+
+              <button
+                type="button"
+                disabled={currentPage === totalPages}
+                onClick={() => {
+                  setCurrentPage((p) => Math.min(p + 1, totalPages))
+                  document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' })
+                }}
+                className="p-2.5 rounded-xl bg-[#191c1e] text-[#908fa0] hover:text-white border border-[#464554]/40 hover:bg-[#272a2c] disabled:opacity-30 disabled:pointer-events-none transition-all duration-200"
+                aria-label="Next page"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+
         </div>
       </section>
 
       {/* 4. Tech Stack Section */}
       <section id="tech" className="py-28 relative border-t border-[#464554]/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
+
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -725,9 +984,9 @@ function PortfolioContent() {
       {/* 5. Contact Section */}
       <section id="contact" className="py-28 relative border-t border-[#464554]/30 bg-[#0d0f10]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
-            
+
             {/* Info Col */}
             <motion.div
               initial={{ opacity: 0, x: -24 }}
@@ -752,17 +1011,17 @@ function PortfolioContent() {
               </div>
 
               {/* Direct channels */}
-              <div className="space-y-4.5">
+              <div className="space-y-4">
                 <a
                   href={`mailto:${profile.contact?.email}`}
-                  className="flex items-center gap-4 p-4.5 bg-[#191c1e] hover:bg-[#272a2c] border border-[#464554]/50 rounded-2xl transition-all"
+                  className="flex items-center gap-4.5 p-5 bg-white/[0.02] border border-white/[0.05] hover:border-[#c0c1ff]/30 hover:bg-white/[0.04] rounded-2xl transition-all duration-300 group shadow-lg"
                 >
-                  <div className="p-3 bg-blue-500/10 rounded-xl text-blue-400">
+                  <div className="p-3 bg-blue-500/10 rounded-xl text-blue-400 border border-blue-500/20 group-hover:scale-105 transition-transform duration-300">
                     <Mail className="h-5 w-5" />
                   </div>
                   <div>
                     <p className="text-[10px] uppercase font-bold text-[#908fa0] tracking-wider mb-0.5">Email</p>
-                    <p className="text-sm font-semibold text-white">{profile.contact?.email}</p>
+                    <p className="text-sm font-semibold text-white transition-colors group-hover:text-[#c0c1ff]">{profile.contact?.email}</p>
                   </div>
                 </a>
 
@@ -770,26 +1029,26 @@ function PortfolioContent() {
                   <a
                     href={`https://wa.me/${profile.contact.whatsapp.replace('+', '')}`}
                     target="_blank"
-                    className="flex items-center gap-4 p-4.5 bg-[#191c1e] hover:bg-[#272a2c] border border-[#464554]/50 rounded-2xl transition-all"
+                    className="flex items-center gap-4.5 p-5 bg-white/[0.02] border border-white/[0.05] hover:border-emerald-500/30 hover:bg-white/[0.04] rounded-2xl transition-all duration-300 group shadow-lg"
                   >
-                    <div className="p-3 bg-green-500/10 rounded-xl text-green-400">
+                    <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400 border border-emerald-500/20 group-hover:scale-105 transition-transform duration-300">
                       <MessageCircle className="h-5 w-5" />
                     </div>
                     <div>
                       <p className="text-[10px] uppercase font-bold text-[#908fa0] tracking-wider mb-0.5">WhatsApp / Phone</p>
-                      <p className="text-sm font-semibold text-white">{profile.contact.whatsapp}</p>
+                      <p className="text-sm font-semibold text-white transition-colors group-hover:text-emerald-400">{profile.contact.whatsapp}</p>
                     </div>
                   </a>
                 )}
               </div>
 
               {/* Social Handles */}
-              <div className="flex items-center gap-3.5 pt-3">
+              <div className="flex items-center gap-3 pt-4">
                 {profile.contact?.github && (
                   <a
                     href={profile.contact.github}
                     target="_blank"
-                    className="p-3.5 bg-[#191c1e] hover:bg-[#c0c1ff]/10 hover:text-[#c0c1ff] border border-[#464554]/50 rounded-xl transition-all"
+                    className="p-3.5 bg-[#191c1e] hover:bg-[#c0c1ff]/10 hover:text-[#c0c1ff] border border-[#464554]/55 hover:border-[#c0c1ff]/30 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
                     aria-label="GitHub"
                   >
                     <Github className="h-5 w-5" />
@@ -799,7 +1058,7 @@ function PortfolioContent() {
                   <a
                     href={profile.contact.linkedin}
                     target="_blank"
-                    className="p-3.5 bg-[#191c1e] hover:bg-[#c0c1ff]/10 hover:text-[#c0c1ff] border border-[#464554]/50 rounded-xl transition-all"
+                    className="p-3.5 bg-[#191c1e] hover:bg-[#c0c1ff]/10 hover:text-[#c0c1ff] border border-[#464554]/55 hover:border-[#c0c1ff]/30 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
                     aria-label="LinkedIn"
                   >
                     <Linkedin className="h-5 w-5" />
@@ -809,7 +1068,7 @@ function PortfolioContent() {
                   <a
                     href={profile.contact.twitter}
                     target="_blank"
-                    className="p-3.5 bg-[#191c1e] hover:bg-[#c0c1ff]/10 hover:text-[#c0c1ff] border border-[#464554]/50 rounded-xl transition-all"
+                    className="p-3.5 bg-[#191c1e] hover:bg-[#c0c1ff]/10 hover:text-[#c0c1ff] border border-[#464554]/55 hover:border-[#c0c1ff]/30 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
                     aria-label="Twitter"
                   >
                     <Twitter className="h-5 w-5" />
@@ -874,31 +1133,79 @@ function PortfolioContent() {
                     rows={4}
                     value={formData.message}
                     onChange={(e) => setFormData(prev => ({ ...prev, message: e.target.value }))}
-                    className="w-full bg-[#101415] border border-[#464554]/60 rounded-xl px-4 py-3 text-sm text-white placeholder-[#908fa0]/30 outline-none focus:border-[#c0c1ff]/50 transition-colors resize-none"
+                    className="w-full bg-[#101415] border border-[#464554]/60 rounded-xl px-4 py-3 text-sm text-white placeholder-[#908fa0]/30 outline-none focus:border-[#c0c1ff]/50 focus:ring-1 focus:ring-[#c0c1ff]/20 transition-all resize-none"
                     placeholder="Describe your goals, project details, and timeline..."
                   />
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-3.5
-                             bg-[#c0c1ff] text-[#1000a9] rounded-xl text-sm font-bold hover:bg-[#c0c1ff]/90
-                             transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none
-                             shadow-xl shadow-[#c0c1ff]/10 hover:shadow-[#c0c1ff]/20"
-                >
-                  {submitting ? (
-                    <>
-                      <Loader2 className="h-4.5 w-4.5 animate-spin" />
-                      Sending...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="h-4.5 w-4.5" />
-                      Send Message
-                    </>
-                  )}
-                </button>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pt-6 border-t border-[#464554]/30 mt-8">
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-3.5
+                               bg-[#c0c1ff] text-[#1000a9] rounded-xl text-sm font-bold hover:bg-[#c0c1ff]/90
+                               transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none
+                               shadow-xl shadow-[#c0c1ff]/10 hover:shadow-[#c0c1ff]/20"
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className="h-4.5 w-4.5 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-4.5 w-4.5" />
+                        Send Message
+                      </>
+                    )}
+                  </button>
+
+                  {/* Dynamic Social Links inside the form card */}
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-[#908fa0] font-medium">Or connect via:</span>
+                    <div className="flex items-center gap-2">
+                      {profile.contact?.github && (
+                        <a
+                          href={profile.contact.github}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-9 h-9 rounded-xl bg-[#101415] border border-[#464554]/50
+                                     flex items-center justify-center text-[#908fa0]
+                                     hover:text-[#c0c1ff] hover:border-[#c0c1ff]/30 transition-all hover:scale-105"
+                          aria-label="GitHub"
+                        >
+                          <Github className="h-4.5 w-4.5" />
+                        </a>
+                      )}
+                      {profile.contact?.linkedin && (
+                        <a
+                          href={profile.contact.linkedin}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-9 h-9 rounded-xl bg-[#101415] border border-[#464554]/50
+                                     flex items-center justify-center text-[#908fa0]
+                                     hover:text-[#c0c1ff] hover:border-[#c0c1ff]/30 transition-all hover:scale-105"
+                          aria-label="LinkedIn"
+                        >
+                          <Linkedin className="h-4.5 w-4.5" />
+                        </a>
+                      )}
+                      {profile.contact?.twitter && (
+                        <a
+                          href={profile.contact.twitter}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-9 h-9 rounded-xl bg-[#101415] border border-[#464554]/50
+                                     flex items-center justify-center text-[#908fa0]
+                                     hover:text-[#c0c1ff] hover:border-[#c0c1ff]/30 transition-all hover:scale-105"
+                          aria-label="Twitter"
+                        >
+                          <Twitter className="h-4.5 w-4.5" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </form>
             </motion.div>
           </div>
@@ -990,10 +1297,10 @@ function PortfolioContent() {
                 {/* Tags */}
                 {selectedProject.tags && selectedProject.tags.length > 0 && (
                   <div>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-white mb-2.5">Built with</h4>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#908fa0] mb-2.5">Built with</h4>
                     <div className="flex flex-wrap gap-2">
                       {selectedProject.tags.map((t) => (
-                        <span key={t} className="px-3 py-1 bg-[#101415] border border-[#464554]/50 text-[#c0c1ff] text-xs rounded-lg font-semibold">
+                        <span key={t} className="px-3.5 py-1 bg-[#c0c1ff]/10 border border-[#c0c1ff]/15 text-[#c0c1ff] text-xs rounded-xl font-medium">
                           {t}
                         </span>
                       ))}
