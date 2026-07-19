@@ -40,7 +40,7 @@ export default function LoginPage() {
     setError('')
     try {
       await signInWithEmailAndPassword(auth, email, password)
-      router.push('/overview')
+      router.push('/dashboard')
     } catch (err) {
       const error = err as FirebaseError
       setError(error.message|| 'Failed to sign in. Please try again')

@@ -18,6 +18,7 @@ import {
   Database, Figma, Terminal, Code, Cpu, ChevronLeft, ChevronRight, Download, User as UserIcon
 } from 'lucide-react'
 import Hero from '../components/Hero'
+import ProjectCard from '../components/project-card'
 
 /* ─── Constants & Configurations ────────────────── */
 const ADMIN_UID = process.env.NEXT_PUBLIC_ADMIN_UID ?? 'uQxNQHVIbNhm7hNHl8bnwH2Xc322'
@@ -38,6 +39,8 @@ interface Project {
   views?: number
   githubUrl?: string
   liveUrl?: string
+  stackBreakdown?: { label: string; items: string[] }[]
+  decisions?: { title: string; detail: string }[]
 }
 
 interface ProfileData {
@@ -211,7 +214,6 @@ function PortfolioContent() {
   const [likedProjects, setLikedProjects] = useState<Set<string>>(new Set())
   const [activeCategory, setActiveCategory] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const PROJECTS_PER_PAGE = 6
 
@@ -306,17 +308,6 @@ function PortfolioContent() {
         const projSnap = await getDocs(collection(db, 'projects'))
         const projList = projSnap.docs.map(d => ({ id: d.id, ...d.data() } as Project))
         setProjects(projList)
-
-        // Parse query parameter to auto-open project
-        const projectParam = searchParams.get('project')
-        if (projectParam) {
-          const matched = projList.find(p => p.id === projectParam)
-          if (matched) {
-            setSelectedProject(matched)
-            // Increment view count when modal is opened on query param match
-            updateDoc(doc(db, 'projects', matched.id), { views: increment(1) }).catch(() => { })
-          }
-        }
       } catch {
         toast('Failed to load project database. Displaying template projects.', 'error')
       } finally {
@@ -368,9 +359,6 @@ function PortfolioContent() {
     setProjects((prev) =>
       prev.map((p) => p.id === projectId
         ? { ...p, likes: (p.likes || 0) + (already ? -1 : 1) } : p))
-    if (selectedProject?.id === projectId) {
-      setSelectedProject(prev => prev ? { ...prev, likes: (prev.likes || 0) + (already ? -1 : 1) } : null)
-    }
 
     try {
       if (already) {
@@ -396,8 +384,7 @@ function PortfolioContent() {
     }
   }
 
-  const openProjectModal = async (project: Project) => {
-    setSelectedProject(project)
+  const incrementProjectViews = async (project: Project) => {
     try {
       await updateDoc(doc(db, 'projects', project.id), { views: increment(1) })
       setProjects(prev => prev.map(p => p.id === project.id ? { ...p, views: (p.views || 0) + 1 } : p))
@@ -782,77 +769,30 @@ function PortfolioContent() {
               ))
             ) : paginatedProjects.length > 0 ? (
               paginatedProjects.map((project) => (
-                <motion.div
+                <ProjectCard
                   key={project.id}
-                  onClick={() => openProjectModal(project)}
-                  whileHover={{ y: -6 }}
-                  className="group bg-[#191c1e] border border-[#464554]/50 rounded-3xl overflow-hidden cursor-pointer
-                             hover:border-[#c0c1ff]/30 hover:shadow-2xl hover:shadow-[#c0c1ff]/5 transition-all duration-300 flex flex-col h-full"
-                >
-                  {/* Project Image */}
-                  <div className="relative h-48 bg-[#101415] overflow-hidden">
-                    {project.imageUrl || project.image ? (
-                      <img
-                        src={project.imageUrl || project.image}
-                        alt={project.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        onError={(el) => { (el.target as HTMLImageElement).src = '/placeholder.png' }}
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-[#c0c1ff]/10 to-rose-500/5 flex items-center justify-center">
-                        <Code2 className="h-12 w-12 text-[#c0c1ff]/35" />
-                      </div>
-                    )}
-                    <span className="absolute top-4 left-4 px-2.5 py-1 bg-[#101415]/90 backdrop-blur-md
-                                     text-[10px] font-bold uppercase rounded-md border border-[#464554]/50 text-[#c0c1ff]">
-                      {project.category}
-                    </span>
-                  </div>
-
-                  {/* Body info */}
-                  <div className="p-6 flex flex-col flex-1">
-                    <h3 className="text-lg font-bold text-white group-hover:text-[#c0c1ff] transition-colors mb-2">
-                      {project.title}
-                    </h3>
-                    <p className="text-xs sm:text-sm text-[#908fa0] line-clamp-3 mb-5 leading-relaxed flex-1">
-                      {project.summary || project.description}
-                    </p>
-
-                    {/* Tags */}
-                    {project.tags && project.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mb-5">
-                        {project.tags.slice(0, 3).map((t) => (
-                          <span key={t} className="px-2 py-0.5 bg-[#c0c1ff]/5 text-[#c0c1ff] border border-[#c0c1ff]/10 text-[10px] rounded-md font-medium">
-                            {t}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Footer stats */}
-                    <div className="flex items-center justify-between pt-4 border-t border-[#464554]/30 text-xs text-[#908fa0]">
-                      <div className="flex items-center gap-3">
-                        <button
-                          type="button"
-                          onClick={(e) => handleLike(e, project)}
-                          className={`flex items-center gap-1.5 py-1 hover:text-[#c0c1ff] transition-all ${likedProjects.has(project.id) ? 'text-rose-400' : ''}`}
-                        >
-                          <Heart className={`h-4.5 w-4.5 ${likedProjects.has(project.id) ? 'fill-current text-rose-400' : ''}`} />
-                          {project.likes || 0}
-                        </button>
-                        <span className="flex items-center gap-1.5">
-                          <Eye className="h-4.5 w-4.5" />
-                          {project.views || 0}
-                        </span>
-                      </div>
-                      <span className="inline-flex items-center gap-1 text-[#c0c1ff] group-hover:translate-x-1.5 transition-transform text-[11px] font-semibold">
-                        View Details
-                        <ArrowRight className="h-3 w-3" />
-                      </span>
-                    </div>
-                  </div>
-
-                </motion.div>
+                  id={project.id}
+                  title={project.title}
+                  description={project.description}
+                  image={project.imageUrl || project.image || ''}
+                  screenshots={project.screenshots}
+                  category={project.category || ''}
+                  tags={project.tags}
+                  summary={project.summary}
+                  likes={project.likes}
+                  views={project.views}
+                  featured={project.featured}
+                  isLiked={likedProjects.has(project.id)}
+                  githubUrl={project.githubUrl}
+                  liveUrl={project.liveUrl}
+                  onLike={() => {
+                    const dummyEvent = { preventDefault: () => {}, stopPropagation: () => {} } as React.MouseEvent
+                    handleLike(dummyEvent, project)
+                  }}
+                  onView={() => {
+                    incrementProjectViews(project)
+                  }}
+                />
               ))
             ) : (
               <div className="col-span-full py-16 text-center text-[#908fa0] text-sm">
@@ -1213,208 +1153,8 @@ function PortfolioContent() {
         </div>
       </section>
 
-      {/* 6. Dynamic Modal Details Overlay */}
-      <AnimatePresence>
-        {selectedProject && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[110] flex items-center justify-center bg-black/75 backdrop-blur-md px-4 py-6"
-            onClick={() => setSelectedProject(null)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ duration: 0.3, ease: EASE }}
-              className="bg-[#191c1e] border border-[#464554]/70 rounded-3xl max-w-3xl w-full max-h-[85vh]
-                         overflow-y-auto shadow-2xl relative scrollbar-none"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Close button */}
-              <button
-                onClick={() => setSelectedProject(null)}
-                className="absolute top-5 right-5 z-20 p-2 rounded-xl bg-black/60 backdrop-blur-md hover:bg-black/80
-                           text-[#e0e3e5] border border-[#464554]/50 transition-colors"
-                aria-label="Close details"
-              >
-                <X className="h-4.5 w-4.5" />
-              </button>
 
-              {/* Cover/Screenshots section */}
-              <div className="relative h-64 sm:h-80 bg-[#101415]">
-                {selectedProject.screenshots && selectedProject.screenshots.length > 0 ? (
-                  <ProjectGallery images={selectedProject.screenshots} title={selectedProject.title} />
-                ) : selectedProject.imageUrl || selectedProject.image ? (
-                  <img
-                    src={selectedProject.imageUrl || selectedProject.image}
-                    alt={selectedProject.title}
-                    className="w-full h-full object-cover"
-                    onError={(el) => { (el.target as HTMLImageElement).src = '/placeholder.png' }}
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-[#c0c1ff]/15 to-rose-500/5 flex items-center justify-center">
-                    <Code2 className="h-16 w-16 text-[#c0c1ff]/30" />
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#191c1e] via-[#191c1e]/20 to-transparent pointer-events-none" />
-              </div>
 
-              {/* Details Body */}
-              <div className="p-6 sm:p-9 space-y-6">
-                <div>
-                  <span className="px-2.5 py-1 bg-[#c0c1ff]/10 text-[#c0c1ff] border border-[#c0c1ff]/20 text-[10px] font-bold uppercase rounded-md">
-                    {selectedProject.category}
-                  </span>
-                  <h3 className="text-2xl sm:text-3xl font-extrabold text-white mt-3 mb-2">
-                    {selectedProject.title}
-                  </h3>
-                  <div className="flex items-center gap-4 text-xs text-[#908fa0]">
-                    <button
-                      type="button"
-                      onClick={(e) => handleLike(e, selectedProject)}
-                      className={`flex items-center gap-1.5 hover:text-[#c0c1ff] transition-all ${likedProjects.has(selectedProject.id) ? 'text-rose-400' : ''}`}
-                    >
-                      <Heart className={`h-4.5 w-4.5 ${likedProjects.has(selectedProject.id) ? 'fill-current text-rose-400' : ''}`} />
-                      {selectedProject.likes || 0} Likes
-                    </button>
-                    <span className="flex items-center gap-1.5">
-                      <Eye className="h-4.5 w-4.5" />
-                      {selectedProject.views || 0} Views
-                    </span>
-                  </div>
-                </div>
-
-                {/* Description */}
-                <div className="space-y-4">
-                  <h4 className="text-sm font-bold uppercase tracking-wider text-white">Project Details</h4>
-                  <p className="text-sm sm:text-base text-[#908fa0] leading-relaxed whitespace-pre-line">
-                    {selectedProject.description}
-                  </p>
-                </div>
-
-                {/* Tags */}
-                {selectedProject.tags && selectedProject.tags.length > 0 && (
-                  <div>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#908fa0] mb-2.5">Built with</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedProject.tags.map((t) => (
-                        <span key={t} className="px-3.5 py-1 bg-[#c0c1ff]/10 border border-[#c0c1ff]/15 text-[#c0c1ff] text-xs rounded-xl font-medium">
-                          {t}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* CTAs */}
-                <div className="flex flex-wrap gap-3.5 pt-4 border-t border-[#464554]/30">
-                  {selectedProject.liveUrl && (
-                    <a
-                      href={selectedProject.liveUrl}
-                      target="_blank"
-                      className="inline-flex items-center gap-2 px-5 py-3 bg-[#c0c1ff] text-[#1000a9]
-                                 rounded-xl text-sm font-bold hover:bg-[#c0c1ff]/90 transition-all active:scale-[0.98]"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                      Live Demo
-                    </a>
-                  )}
-                  {selectedProject.githubUrl && (
-                    <a
-                      href={selectedProject.githubUrl}
-                      target="_blank"
-                      className="inline-flex items-center gap-2 px-5 py-3 bg-[#272a2c] hover:bg-[#323537]
-                                 text-white border border-[#464554]/70 rounded-xl text-sm font-bold
-                                 transition-all active:scale-[0.98]"
-                    >
-                      <Github className="h-4 w-4" />
-                      Source Code
-                    </a>
-                  )}
-                </div>
-
-              </div>
-
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-    </div>
-  )
-}
-
-/* ─── Secondary Component: Modal Gallery ──────────── */
-interface ProjectGalleryProps {
-  images: string[]
-  title: string
-}
-
-function ProjectGallery({ images, title }: ProjectGalleryProps) {
-  const [idx, setIdx] = useState(0)
-  const [direction, setDirection] = useState(0)
-
-  const go = (e: React.MouseEvent, targetIdx: number) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setDirection(targetIdx > idx ? 1 : -1)
-    setIdx(targetIdx)
-  }
-
-  const prev = (e: React.MouseEvent) => go(e, (idx - 1 + images.length) % images.length)
-  const next = (e: React.MouseEvent) => go(e, (idx + 1) % images.length)
-
-  return (
-    <div className="relative w-full h-full">
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.img
-          key={idx}
-          src={images[idx]}
-          alt={`${title} screenshot ${idx + 1}`}
-          initial={{ opacity: 0, x: direction * 50 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: direction * -50 }}
-          transition={{ duration: 0.25, ease: EASE }}
-          className="absolute inset-0 w-full h-full object-cover"
-          onError={(el) => { (el.target as HTMLImageElement).src = '/placeholder.png' }}
-        />
-      </AnimatePresence>
-
-      {/* Buttons */}
-      {images.length > 1 && (
-        <>
-          <button
-            onClick={prev}
-            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-black/60 backdrop-blur-md hover:bg-black/80
-                       rounded-full text-white border border-[#464554]/50 transition-colors z-20"
-            aria-label="Previous screenshot"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <button
-            onClick={next}
-            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-black/60 backdrop-blur-md hover:bg-black/80
-                       rounded-full text-white border border-[#464554]/50 transition-colors z-20"
-            aria-label="Next screenshot"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-
-          {/* Dot indicator */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
-            {images.map((_, i) => (
-              <button
-                key={i}
-                onClick={(e) => go(e, i)}
-                className={`w-2 h-2 rounded-full transition-all ${i === idx ? 'bg-white scale-125' : 'bg-white/40 hover:bg-white/60'}`}
-                aria-label={`Show screenshot ${i + 1}`}
-              />
-            ))}
-          </div>
-        </>
-      )}
     </div>
   )
 }

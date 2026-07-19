@@ -264,9 +264,8 @@ export default function Hero() {
               variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
               className="text-5xl sm:text-6xl lg:text-7xl font-bold font-display text-foreground leading-[1.02] mb-6"
             >
-              I build{' '}
-              <span className="gradient-text block sm:inline">digital products</span>{' '}
-              that ship.
+              Digitalizing{' '}
+              <span className="gradient-text block sm:inline">the world</span>
             </motion.h1>
 
             {/* Typewriter */}
@@ -585,7 +584,7 @@ export default function Hero() {
                   {/* Only link to real Firestore documents */}
                   {!isFallback && current ? (
                     <Link
-                      href={`/?project=${current.id}`}
+                      href={`/projects/${current.id}`}
                       className="inline-flex items-center gap-1.5 text-xs font-semibold
                                  text-[#c0c1ff] hover:text-white transition-colors"
                     >
@@ -606,26 +605,6 @@ export default function Hero() {
               </div>
             </div>
 
-            {/* ── Floating chip — Tech Stack ── */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8, y: 12 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ delay: 1.0, duration: 0.5 }}
-              className="absolute -top-6 -right-6 bg-[#1a1c1d]/90 backdrop-blur-md rounded-2xl p-4 shadow-2xl
-                         hidden sm:block border border-white/10 z-10"
-            >
-              <p className="text-[10px] font-bold text-foreground mb-2.5 flex items-center gap-1.5 uppercase tracking-wider">
-                <Sparkles className="h-3.5 w-3.5 text-[#c0c1ff]" />
-                Main Stack
-              </p>
-              <div className="flex flex-wrap gap-1.5 max-w-[148px]">
-                {['Next.js', 'Firebase', 'Kotlin', 'TypeScript'].map((t) => (
-                  <span key={t} className="px-2 py-0.5 bg-[#c0c1ff]/10 text-[#c0c1ff] text-[10px] rounded-md font-medium border border-[#c0c1ff]/15">
-                    {t}
-                  </span>
-                ))}
-              </div>
-            </motion.div>
           </motion.div>
         </div>
 

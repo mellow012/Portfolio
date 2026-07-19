@@ -11,8 +11,7 @@ import {
   GraduationCap, Briefcase, Code, Coffee, Download, ArrowUpRight
 } from 'lucide-react'
 
-const ADMIN_UID = process.env.NEXT_PUBLIC_ADMIN_UID!
-if (!ADMIN_UID) throw new Error('Missing NEXT_PUBLIC_ADMIN_UID')
+const ADMIN_UID = process.env.NEXT_PUBLIC_ADMIN_UID ?? 'uQxNQHVIbNhm7hNHl8bnwH2Xc322'
 
 interface ProfileData {
   name: string
@@ -26,7 +25,7 @@ interface ProfileData {
 
 interface SocialLink { id: string; platform: string; url: string }
 interface ContactDetail { id: string; type: string; value: string }
-interface Qualification { id: string; title: string; institution: string; year: string; type?: string }
+interface Academic { id: string; degree: string; institution: string; period: string; description?: string }
 interface Experience { id: string; title: string; company: string; period: string; description?: string }
 interface Skill { id: string; name: string; category: string; proficiency: number }
 interface FunFact { id: string; text: string }
@@ -45,7 +44,7 @@ export default function ProfilePage() {
 
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([])
   const [contactDetails, setContactDetails] = useState<ContactDetail[]>([])
-  const [qualifications, setQualifications] = useState<Qualification[]>([])
+  const [academics, setAcademics] = useState<Academic[]>([])
   const [experiences, setExperiences] = useState<Experience[]>([])
   const [skills, setSkills] = useState<Skill[]>([])
   const [funFacts, setFunFacts] = useState<FunFact[]>([])
@@ -76,10 +75,10 @@ export default function ProfilePage() {
         return snap.docs.map(d => ({ id: d.id, ...d.data() } as any))
       }
 
-      const [socials, contacts, quals, exps, sks, facts] = await Promise.all([
+      const [socials, contacts, acads, exps, sks, facts] = await Promise.all([
         fetchCol('socialLinks'),
         fetchCol('contactDetails'),
-        fetchCol('qualifications'),
+        fetchCol('academics'),
         fetchCol('experiences'),
         fetchCol('skills'),
         fetchCol('funFacts')
@@ -87,7 +86,7 @@ export default function ProfilePage() {
 
       setSocialLinks(socials as SocialLink[])
       setContactDetails(contacts as ContactDetail[])
-      setQualifications(quals as Qualification[])
+      setAcademics(acads as Academic[])
       setExperiences(exps as Experience[])
       setSkills(sks as Skill[])
       setFunFacts(facts as FunFact[])
@@ -132,7 +131,7 @@ export default function ProfilePage() {
 
       save(socialLinks, 'socialLinks')
       save(contactDetails, 'contactDetails')
-      save(qualifications, 'qualifications')
+      save(academics, 'academics')
       save(experiences, 'experiences')
       save(skills, 'skills')
       save(funFacts, 'funFacts')
@@ -249,6 +248,67 @@ export default function ProfilePage() {
                   <img src={profile.qrCode} alt="QR" className="w-64 h-64 mx-auto rounded-2xl shadow-2xl" />
                 </div>
               )}
+
+              {/* Academics (Education) */}
+              {academics.length > 0 && (
+                <div className="bg-white dark:bg-gray-800 rounded-3xl p-10 shadow-xl">
+                  <h3 className="text-2xl font-bold mb-8 flex items-center gap-3"><GraduationCap className="h-7 w-7 text-purple-500" /> Education</h3>
+                  <div className="space-y-6 border-l border-gray-100 dark:border-gray-700 ml-4 pl-6">
+                    {academics.map(acad => (
+                      <div key={acad.id} className="relative">
+                        <span className="absolute -left-[31px] top-1.5 w-4 h-4 rounded-full bg-white dark:bg-gray-800 border-4 border-purple-500" />
+                        <span className="text-xs font-semibold text-purple-500 bg-purple-500/10 px-2.5 py-1 rounded-md">
+                          {acad.period}
+                        </span>
+                        <h4 className="text-xl font-bold mt-2 text-gray-900 dark:text-white">{acad.degree}</h4>
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{acad.institution}</p>
+                        {acad.description && <p className="text-sm text-muted-foreground mt-2">{acad.description}</p>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Experience */}
+              {experiences.length > 0 && (
+                <div className="bg-white dark:bg-gray-800 rounded-3xl p-10 shadow-xl">
+                  <h3 className="text-2xl font-bold mb-8 flex items-center gap-3"><Briefcase className="h-7 w-7 text-blue-500" /> Experience</h3>
+                  <div className="space-y-6 border-l border-gray-100 dark:border-gray-700 ml-4 pl-6">
+                    {experiences.map(exp => (
+                      <div key={exp.id} className="relative">
+                        <span className="absolute -left-[31px] top-1.5 w-4 h-4 rounded-full bg-white dark:bg-gray-800 border-4 border-blue-500" />
+                        <span className="text-xs font-semibold text-blue-500 bg-blue-500/10 px-2.5 py-1 rounded-md">
+                          {exp.period}
+                        </span>
+                        <h4 className="text-xl font-bold mt-2 text-gray-900 dark:text-white">{exp.title}</h4>
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{exp.company}</p>
+                        {exp.description && <p className="text-sm text-muted-foreground mt-2">{exp.description}</p>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Skills */}
+              {skills.length > 0 && (
+                <div className="bg-white dark:bg-gray-800 rounded-3xl p-10 shadow-xl">
+                  <h3 className="text-2xl font-bold mb-8 flex items-center gap-3"><Code className="h-7 w-7 text-rose-500" /> Skills</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {skills.map(skill => (
+                      <div key={skill.id} className="p-5 bg-gray-50 dark:bg-gray-700/50 rounded-2xl">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="font-semibold text-gray-900 dark:text-white">{skill.name}</span>
+                          <span className="text-xs text-muted-foreground bg-gray-200 dark:bg-gray-600 px-2 py-0.5 rounded">{skill.category}</span>
+                        </div>
+                        <div className="w-full bg-gray-200 dark:bg-gray-700 h-2 rounded-full overflow-hidden">
+                          <div className="bg-rose-500 h-full" style={{ width: `${skill.proficiency}%` }} />
+                        </div>
+                        <span className="text-[10px] text-muted-foreground mt-1 block text-right">{skill.proficiency}% Proficiency</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
         ) : (
@@ -296,6 +356,67 @@ export default function ProfilePage() {
                   <input placeholder="Type" value={c.type} onChange={e => updateItem(contactDetails, setContactDetails, c.id, 'type', e.target.value)} className={`${inputClasses} w-48`} />
                   <input placeholder="Value" value={c.value} onChange={e => updateItem(contactDetails, setContactDetails, c.id, 'value', e.target.value)} className={inputClasses} />
                   <button onClick={() => deleteItem('contactDetails', c.id, setContactDetails)} className="text-red-500"><Trash2 className="h-6 w-6" /></button>
+                </div>
+              ))}
+            </section>
+
+            {/* Academics (Education) */}
+            <section className="bg-white dark:bg-gray-800 rounded-3xl p-10 shadow-2xl">
+              <div className="flex justify-between mb-6">
+                <h2 className="text-2xl font-bold">Education (Academics)</h2>
+                <button onClick={() => addItem(setAcademics, { degree: '', institution: '', period: '', description: '' })} className="text-gray-700 dark:text-gray-300 font-bold">+ Add Education</button>
+              </div>
+              {academics.map(acad => (
+                <div key={acad.id} className="border-b border-gray-200 dark:border-gray-700 pb-6 mb-6 last:border-0 last:pb-0 last:mb-0">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <input placeholder="Degree/Certificate" value={acad.degree} onChange={e => updateItem(academics, setAcademics, acad.id, 'degree', e.target.value)} className={inputClasses} />
+                    <input placeholder="Institution" value={acad.institution} onChange={e => updateItem(academics, setAcademics, acad.id, 'institution', e.target.value)} className={inputClasses} />
+                    <input placeholder="Period (e.g. 2019 - 2023)" value={acad.period} onChange={e => updateItem(academics, setAcademics, acad.id, 'period', e.target.value)} className={inputClasses} />
+                  </div>
+                  <div className="flex gap-4 items-start">
+                    <textarea placeholder="Description" value={acad.description || ''} onChange={e => updateItem(academics, setAcademics, acad.id, 'description', e.target.value)} rows={3} className={`${inputClasses} resize-none`} />
+                    <button onClick={() => deleteItem('academics', acad.id, setAcademics)} className="text-red-500 mt-3"><Trash2 className="h-6 w-6" /></button>
+                  </div>
+                </div>
+              ))}
+            </section>
+
+            {/* Experience */}
+            <section className="bg-white dark:bg-gray-800 rounded-3xl p-10 shadow-2xl">
+              <div className="flex justify-between mb-6">
+                <h2 className="text-2xl font-bold">Work Experience</h2>
+                <button onClick={() => addItem(setExperiences, { title: '', company: '', period: '', description: '' })} className="text-gray-700 dark:text-gray-300 font-bold">+ Add Experience</button>
+              </div>
+              {experiences.map(exp => (
+                <div key={exp.id} className="border-b border-gray-200 dark:border-gray-700 pb-6 mb-6 last:border-0 last:pb-0 last:mb-0">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <input placeholder="Job Title" value={exp.title} onChange={e => updateItem(experiences, setExperiences, exp.id, 'title', e.target.value)} className={inputClasses} />
+                    <input placeholder="Company" value={exp.company} onChange={e => updateItem(experiences, setExperiences, exp.id, 'company', e.target.value)} className={inputClasses} />
+                    <input placeholder="Period (e.g. 2023 - Present)" value={exp.period} onChange={e => updateItem(experiences, setExperiences, exp.id, 'period', e.target.value)} className={inputClasses} />
+                  </div>
+                  <div className="flex gap-4 items-start">
+                    <textarea placeholder="Description" value={exp.description || ''} onChange={e => updateItem(experiences, setExperiences, exp.id, 'description', e.target.value)} rows={3} className={`${inputClasses} resize-none`} />
+                    <button onClick={() => deleteItem('experiences', exp.id, setExperiences)} className="text-red-500 mt-3"><Trash2 className="h-6 w-6" /></button>
+                  </div>
+                </div>
+              ))}
+            </section>
+
+            {/* Skills */}
+            <section className="bg-white dark:bg-gray-800 rounded-3xl p-10 shadow-2xl">
+              <div className="flex justify-between mb-6">
+                <h2 className="text-2xl font-bold">Skills</h2>
+                <button onClick={() => addItem(setSkills, { name: '', category: 'Frontend', proficiency: 80 })} className="text-gray-700 dark:text-gray-300 font-bold">+ Add Skill</button>
+              </div>
+              {skills.map(skill => (
+                <div key={skill.id} className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 items-center border-b border-gray-100 dark:border-gray-700 pb-4 last:border-0 last:pb-0">
+                  <input placeholder="Skill Name" value={skill.name} onChange={e => updateItem(skills, setSkills, skill.id, 'name', e.target.value)} className={inputClasses} />
+                  <input placeholder="Category" value={skill.category} onChange={e => updateItem(skills, setSkills, skill.id, 'category', e.target.value)} className={inputClasses} />
+                  <div className="flex items-center gap-2 md:col-span-2">
+                    <span className="text-xs text-muted-foreground w-12 text-right">{skill.proficiency}%</span>
+                    <input type="range" min="0" max="100" value={skill.proficiency} onChange={e => updateItem(skills, setSkills, skill.id, 'proficiency', parseInt(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700" />
+                    <button onClick={() => deleteItem('skills', skill.id, setSkills)} className="text-red-500 ml-2"><Trash2 className="h-6 w-6" /></button>
+                  </div>
                 </div>
               ))}
             </section>

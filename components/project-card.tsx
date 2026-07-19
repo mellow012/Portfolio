@@ -22,7 +22,7 @@ interface ProjectCardProps {
   githubUrl?: string
   liveUrl?: string
   onLike: () => void
-  onView: () => void
+  onView: (e: React.MouseEvent) => void
 }
 
 const EASE = [0.4, 0, 0.2, 1] as [number, number, number, number]
