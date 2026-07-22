@@ -35,7 +35,6 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "app/page.tsx",
-    "app/overview/page.tsx",
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [

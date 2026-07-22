@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import Hero from '../components/Hero'
 import ProjectCard from '../components/project-card'
+import ProjectDetailModal from '../components/ProjectDetailModal'
 
 /* ─── Constants & Configurations ────────────────── */
 const ADMIN_UID = process.env.NEXT_PUBLIC_ADMIN_UID ?? 'uQxNQHVIbNhm7hNHl8bnwH2Xc322'
@@ -208,6 +209,7 @@ function PortfolioContent() {
 
   const [skills, setSkills] = useState<Skill[]>([])
   const [projects, setProjects] = useState<Project[]>([])
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null)
 
   const [loadingProjects, setLoadingProjects] = useState(true)
   const [user, setUser] = useState<User | null>(null)
@@ -450,7 +452,12 @@ function PortfolioContent() {
 
       {/* 1. Hero Section */}
       <section id="hero" className="relative">
-        <Hero />
+        <Hero
+          onSelectProject={(id) => {
+            const found = projects.find((p) => p.id === id)
+            if (found) setSelectedProject(found)
+          }}
+        />
       </section>
 
       {/* 2. About Me Section */}
@@ -791,6 +798,9 @@ function PortfolioContent() {
                   }}
                   onView={() => {
                     incrementProjectViews(project)
+                  }}
+                  onSelect={() => {
+                    setSelectedProject(project)
                   }}
                 />
               ))
@@ -1153,7 +1163,13 @@ function PortfolioContent() {
         </div>
       </section>
 
-
+      {/* Project Detail Popout Modal */}
+      <ProjectDetailModal
+        project={selectedProject}
+        onClose={() => setSelectedProject(null)}
+        likedProjects={likedProjects}
+        handleLike={handleLike}
+      />
 
     </div>
   )

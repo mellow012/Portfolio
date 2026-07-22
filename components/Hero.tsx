@@ -123,10 +123,14 @@ function ProgressBar({ duration, active }: { duration: number; active: boolean }
   )
 }
 
+interface HeroProps {
+  onSelectProject?: (projectId: string) => void
+}
+
 /* ─── Main Component ─────────────────────────────── */
 const SLIDE_DURATION = 5000
 
-export default function Hero() {
+export default function Hero({ onSelectProject }: HeroProps = {}) {
   const role = useTypewriter(ROLES)
   const [projects, setProjects] = useState<FeaturedProject[]>([])
   const [activeProject, setActiveProject] = useState(0)
@@ -585,6 +589,12 @@ export default function Hero() {
                   {!isFallback && current ? (
                     <Link
                       href={`/projects/${current.id}`}
+                      onClick={(e) => {
+                        if (onSelectProject) {
+                          e.preventDefault()
+                          onSelectProject(current.id)
+                        }
+                      }}
                       className="inline-flex items-center gap-1.5 text-xs font-semibold
                                  text-[#c0c1ff] hover:text-white transition-colors"
                     >

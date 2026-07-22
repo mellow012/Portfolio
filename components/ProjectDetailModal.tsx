@@ -1,8 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Heart, Eye, ExternalLink, Github, ChevronLeft, ChevronRight, Code2 } from 'lucide-react'
+import {
+  X, Heart, Eye, ExternalLink, Github, ChevronLeft, ChevronRight,
+  Code2, Maximize2, Layers, Cpu, CheckCircle2, Sparkles
+} from 'lucide-react'
 
 const EASE = [0.4, 0, 0.2, 1] as [number, number, number, number]
 
@@ -39,6 +42,65 @@ export default function ProjectDetailModal({
   handleLike
 }: ProjectDetailModalProps) {
   const [lightboxImage, setLightboxImage] = useState<string | null>(null)
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
+  const previouslyFocused = useRef<HTMLElement | null>(null)
+
+  // Clears the lightbox alongside the modal so it can never survive a close.
+  const handleClose = () => {
+    setLightboxImage(null)
+    onClose()
+  }
+
+  // Body scroll lock + focus management + Escape-to-close.
+  useEffect(() => {
+    if (!project) return
+
+    previouslyFocused.current = document.activeElement as HTMLElement
+    const originalOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    closeButtonRef.current?.focus()
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (lightboxImage) {
+          setLightboxImage(null)
+        } else {
+          handleClose()
+        }
+        return
+      }
+      if (e.key === 'Tab' && dialogRef.current) {
+        const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+        if (focusable.length === 0) return
+        const first = focusable[0]
+        const last = focusable[focusable.length - 1]
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault()
+          last.focus()
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault()
+          first.focus()
+        }
+      }
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.body.style.overflow = originalOverflow
+      document.removeEventListener('keydown', onKeyDown)
+      previouslyFocused.current?.focus()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project, lightboxImage])
+
+  const galleryImages = [
+    ...(project?.screenshots && project.screenshots.length > 0
+      ? project.screenshots
+      : (project?.imageUrl || project?.image) ? [project.imageUrl || project.image!] : [])
+  ]
 
   return (
     <>
@@ -48,161 +110,197 @@ export default function ProjectDetailModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-md px-4 py-6 md:p-10"
-            onClick={onClose}
+            className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-md px-3 py-4 sm:p-6 md:p-8"
+            onClick={handleClose}
           >
             <motion.div
+              ref={dialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="project-modal-title"
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
               transition={{ duration: 0.3, ease: EASE }}
-              className="bg-[#191c1e] border border-[#464554]/70 rounded-3xl w-full max-w-6xl h-full max-h-[90vh] md:max-h-[85vh]
-                         flex flex-col md:flex-row overflow-hidden shadow-2xl relative"
+              className="bg-[#191c1e] border border-[#464554]/70 rounded-3xl w-full max-w-5xl h-full max-h-[92vh]
+                         flex flex-col overflow-hidden shadow-2xl relative"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Cover/Screenshots Left Panel */}
-              <div className="relative w-full md:w-1/2 h-64 sm:h-80 md:h-full bg-[#101415] shrink-0 border-r border-[#464554]/30">
-                {project.screenshots && project.screenshots.length > 0 ? (
-                  <ProjectGallery
-                    images={project.screenshots}
-                    title={project.title}
-                    onImageClick={(url) => setLightboxImage(url)}
-                  />
-                ) : project.imageUrl || project.image ? (
-                  <img
-                    src={project.imageUrl || project.image}
-                    alt={project.title}
-                    className="w-full h-full object-cover cursor-zoom-in"
-                    onClick={() => setLightboxImage(project.imageUrl || project.image || null)}
-                    onError={(el) => { (el.target as HTMLImageElement).src = '/placeholder.png' }}
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-[#c0c1ff]/15 to-rose-500/5 flex items-center justify-center">
-                    <Code2 className="h-16 w-16 text-[#c0c1ff]/30" />
-                  </div>
-                )}
-              </div>
+              {/* Close button */}
+              <button
+                ref={closeButtonRef}
+                onClick={handleClose}
+                className="absolute top-4 right-4 z-40 p-2.5 rounded-xl bg-black/70 backdrop-blur-md hover:bg-black
+                           text-[#e0e3e5] border border-white/20 transition-all shadow-2xl hover:scale-105 active:scale-95"
+                aria-label="Close details"
+              >
+                <X className="h-[18px] w-[18px]" />
+              </button>
 
-              {/* Details Right Panel */}
-              <div className="w-full md:w-1/2 h-full overflow-y-auto p-6 sm:p-9 md:p-10 space-y-8 scrollbar-none relative">
-                <button
-                  onClick={onClose}
-                  className="absolute top-5 right-5 z-20 p-2 rounded-xl bg-black/45 backdrop-blur-md hover:bg-black/65
-                             text-[#e0e3e5] border border-[#464554]/50 transition-colors"
-                  aria-label="Close details"
-                >
-                  <X className="h-4.5 w-4.5" />
-                </button>
+              {/* Scrollable Container (Centralized Details & Media Showcase) */}
+              <div className="w-full h-full overflow-y-auto scrollbar-none flex flex-col">
+                <div className="w-full p-6 sm:p-8 md:p-10 space-y-10">
 
-                {/* Header block */}
-                <div>
-                  <span className="px-2.5 py-1 bg-[#c0c1ff]/10 text-[#c0c1ff] border border-[#c0c1ff]/20 text-[10px] font-bold uppercase rounded-md">
-                    {project.category}
-                  </span>
-                  <h3 className="text-2xl sm:text-3xl font-extrabold text-white mt-3 mb-2">
-                    {project.title}
-                  </h3>
-
-                  {/* Stats + CTAs row */}
-                  <div className="flex flex-wrap items-center gap-3 mt-4">
-                    <button
-                      type="button"
-                      onClick={(e) => handleLike(e, project)}
-                      className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-[#464554]/50 bg-[#101415]
-                                  text-xs font-semibold hover:border-[#c0c1ff]/30 transition-all
-                                  ${likedProjects.has(project.id) ? 'text-rose-400' : 'text-[#908fa0]'}`}
-                    >
-                      <Heart className={`h-4 w-4 ${likedProjects.has(project.id) ? 'fill-current text-rose-400' : ''}`} />
-                      {project.likes || 0}
-                    </button>
-                    <span className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-[#464554]/50 bg-[#101415] text-xs font-semibold text-[#908fa0]">
-                      <Eye className="h-4 w-4" />
-                      {project.views || 0}
-                    </span>
-
-                    {project.liveUrl && (
-                      <a
-                        href={project.liveUrl}
-                        target="_blank"
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-[#c0c1ff] text-[#1000a9]
-                                   rounded-xl text-xs font-bold hover:bg-[#c0c1ff]/90 transition-all active:scale-[0.98]"
-                      >
-                        <ExternalLink className="h-3.5 w-3.5" />
-                        Live Demo
-                      </a>
-                    )}
-                    {project.githubUrl && (
-                      <a
-                        href={project.githubUrl}
-                        target="_blank"
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-[#272a2c] hover:bg-[#323537]
-                                   text-white border border-[#464554]/70 rounded-xl text-xs font-bold transition-all active:scale-[0.98]"
-                      >
-                        <Github className="h-3.5 w-3.5" />
-                        Source
-                      </a>
-                    )}
-                  </div>
-                </div>
-
-                {/* Description */}
-                <div className="space-y-3">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#908fa0]">Project Details</h4>
-                  <p className="text-sm leading-relaxed whitespace-pre-line" style={{ color: '#e0e3e5', opacity: 0.85 }}>
-                    {project.description}
-                  </p>
-                </div>
-
-                {/* Built with tags */}
-                {project.tags && project.tags.length > 0 && (
-                  <div>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#908fa0] mb-2.5">Built with</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {project.tags.map((t) => (
-                        <span key={t} className="px-3 py-0.5 bg-[#c0c1ff]/10 border border-[#c0c1ff]/15 text-[#c0c1ff] text-xs rounded-xl font-medium">
-                          {t}
+                  {/* Header block */}
+                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 pb-8 border-b border-[#464554]/30">
+                    <div className="space-y-3 max-w-2xl">
+                      {project.category && (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#c0c1ff]/10 text-[#c0c1ff] border border-[#c0c1ff]/20 text-[10px] font-bold uppercase tracking-wider rounded-lg shadow-sm">
+                          <Layers className="h-3 w-3" />
+                          {project.category}
                         </span>
-                      ))}
+                      )}
+                      <h3 id="project-modal-title" className="text-2xl sm:text-4xl font-extrabold text-white leading-tight tracking-tight">
+                        {project.title}
+                      </h3>
+                      {project.summary && (
+                        <p className="text-sm sm:text-base text-[#908fa0] leading-relaxed">
+                          {project.summary}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Stats & Action CTAs */}
+                    <div className="flex flex-wrap items-center gap-3 shrink-0">
+                      {/* Like Button */}
+                      <button
+                        type="button"
+                        onClick={(e) => handleLike(e, project)}
+                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border bg-[#101415]
+                                    text-xs font-semibold transition-all hover:scale-105 active:scale-95
+                                    ${likedProjects.has(project.id)
+                            ? 'text-rose-400 border-rose-500/40 bg-rose-500/10'
+                            : 'text-[#908fa0] border-[#464554]/50 hover:border-[#c0c1ff]/30'}`}
+                      >
+                        <Heart className={`h-4 w-4 ${likedProjects.has(project.id) ? 'fill-current text-rose-400' : ''}`} />
+                        <span>{project.likes || 0}</span>
+                      </button>
+
+                      {/* View Counter */}
+                      <span className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#464554]/50 bg-[#101415] text-xs font-semibold text-[#908fa0]">
+                        <Eye className="h-4 w-4" />
+                        <span>{project.views || 0}</span>
+                      </span>
+
+                      {/* Live Demo CTA */}
+                      {project.liveUrl && (
+                        <a
+                          href={project.liveUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#c0c1ff] to-[#a3a5ff] text-[#1000a9]
+                                     rounded-xl text-xs font-extrabold hover:opacity-95 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-[#c0c1ff]/20"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                          Live Demo
+                        </a>
+                      )}
+
+                      {/* GitHub Source CTA (Always available) */}
+                      <a
+                        href={project.githubUrl || 'https://github.com/mellow012'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#222527] hover:bg-[#2c2f32]
+                                   text-white border border-[#464554]/70 hover:border-[#c0c1ff]/50 rounded-xl text-xs font-bold transition-all hover:scale-[1.02] active:scale-[0.98] shadow-sm"
+                      >
+                        <Github className="h-4 w-4 text-[#c0c1ff]" />
+                        Source Code
+                      </a>
                     </div>
                   </div>
-                )}
 
-                {/* Technical breakdown */}
-                {project.stackBreakdown && project.stackBreakdown.length > 0 && (
-                  <div>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#908fa0] mb-3">Technical Breakdown</h4>
-                    <div className="grid grid-cols-2 gap-3">
-                      {project.stackBreakdown.map((group) => (
-                        <div key={group.label} className="bg-[#101415] border border-[#464554]/40 rounded-2xl p-4">
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-[#908fa0] mb-2.5">{group.label}</p>
-                          <div className="flex flex-wrap gap-1.5">
-                            {group.items.map((item) => (
-                              <span key={item} className="px-2.5 py-1 bg-[#191c1e] border border-[#464554]/40 rounded-lg text-[11px] font-semibold text-[#e0e3e5]">
-                                {item}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                  {/* Gallery Showcase */}
+                  <div className="relative w-full h-[320px] sm:h-[420px] md:h-[480px] bg-[#0d0f11] rounded-2xl border border-[#464554]/50 overflow-hidden shadow-lg">
+                    {galleryImages.length > 0 ? (
+                      <ProjectGallery
+                        images={galleryImages}
+                        title={project.title}
+                        onImageClick={(url) => setLightboxImage(url)}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-[#c0c1ff]/15 to-rose-500/5 flex flex-col items-center justify-center gap-3">
+                        <Code2 className="h-16 w-16 text-[#c0c1ff]/30" />
+                        <span className="text-xs text-[#908fa0]">No screenshots available</span>
+                      </div>
+                    )}
                   </div>
-                )}
 
-                {/* Key decisions */}
-                {project.decisions && project.decisions.length > 0 && (
-                  <div>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#908fa0] mb-3">Key Decisions</h4>
+                  {/* Project Overview / Details */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-[#908fa0]">
+                      <Sparkles className="h-4 w-4 text-[#c0c1ff]" />
+                      <h4 className="text-xs font-bold uppercase tracking-wider">Project Overview</h4>
+                    </div>
+                    <p className="text-sm sm:text-base leading-relaxed whitespace-pre-line text-[#e0e3e5] opacity-90 pl-1">
+                      {project.description}
+                    </p>
+                  </div>
+
+                  {/* Built with Tech Pills */}
+                  {project.tags && project.tags.length > 0 && (
                     <div className="space-y-3">
-                      {project.decisions.map((d) => (
-                        <div key={d.title} className="bg-[#101415] border-l-2 border-[#c0c1ff] border-y border-r border-[#464554]/30 rounded-2xl p-4">
-                          <p className="text-sm font-bold text-white mb-1.5">{d.title}</p>
-                          <p className="text-xs text-[#908fa0] leading-relaxed">{d.detail}</p>
-                        </div>
-                      ))}
+                      <div className="flex items-center gap-2 text-[#908fa0]">
+                        <Cpu className="h-4 w-4 text-[#c0c1ff]" />
+                        <h4 className="text-xs font-bold uppercase tracking-wider">Built With</h4>
+                      </div>
+                      <div className="flex flex-wrap gap-2.5">
+                        {project.tags.map((t) => (
+                          <span
+                            key={t}
+                            className="px-4 py-1.5 bg-[#101415] border border-[#464554]/50 hover:border-[#c0c1ff]/40 text-[#c0c1ff] text-xs font-semibold rounded-xl shadow-sm transition-all flex items-center gap-1.5"
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#c0c1ff]" />
+                            {t}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
+                  {/* Technical breakdown */}
+                  {project.stackBreakdown && project.stackBreakdown.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-[#908fa0]">
+                        <Layers className="h-4 w-4 text-[#c0c1ff]" />
+                        <h4 className="text-xs font-bold uppercase tracking-wider">Technical Architecture</h4>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {project.stackBreakdown.map((group) => (
+                          <div key={group.label} className="bg-[#101415] border border-[#464554]/50 rounded-2xl p-5 hover:border-[#c0c1ff]/30 transition-all">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-[#908fa0] mb-3">{group.label}</p>
+                            <div className="flex flex-wrap gap-2">
+                              {group.items.map((item) => (
+                                <span key={item} className="px-3 py-1.5 bg-[#191c1e] border border-[#464554]/40 rounded-xl text-xs font-medium text-[#e0e3e5]">
+                                  {item}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Key Decisions */}
+                  {project.decisions && project.decisions.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-[#908fa0]">
+                        <CheckCircle2 className="h-4 w-4 text-[#c0c1ff]" />
+                        <h4 className="text-xs font-bold uppercase tracking-wider">Key Decisions & Insights</h4>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {project.decisions.map((d) => (
+                          <div key={d.title} className="bg-[#101415] border-l-4 border-[#c0c1ff] border-y border-r border-[#464554]/40 rounded-2xl p-5 shadow-sm">
+                            <p className="text-sm font-bold text-white mb-1.5">{d.title}</p>
+                            <p className="text-xs text-[#908fa0] leading-relaxed">{d.detail}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                </div>
               </div>
             </motion.div>
           </motion.div>
@@ -269,57 +367,67 @@ function ProjectGallery({ images, title, onImageClick }: ProjectGalleryProps) {
   const next = (e: React.MouseEvent) => go(e, (idx + 1) % images.length)
 
   return (
-    <div className="relative w-full h-full pb-16 bg-black/20">
-      <div className="relative w-full h-[calc(100%-64px)] overflow-hidden">
-        <AnimatePresence mode="wait" initial={false}>
+    <div className="relative w-full h-full pb-14 bg-[#0a0c0d] overflow-hidden flex flex-col justify-between">
+      {/* Zoom indicator pill */}
+      <button
+        onClick={() => onImageClick?.(images[idx])}
+        className="absolute top-3 left-3 z-20 flex items-center gap-1.5 px-3 py-1.5 bg-black/60 backdrop-blur-md rounded-full text-[11px] font-medium text-white/90 border border-white/10 hover:bg-black/80 transition-colors"
+      >
+        <Maximize2 className="h-3.5 w-3.5" />
+        Click to expand
+      </button>
+
+      {/* Main Image viewport with object-contain */}
+      <div className="relative w-full h-full flex items-center justify-center overflow-hidden p-3">
+        <AnimatePresence initial={false}>
           <motion.img
             key={idx}
             src={images[idx]}
             alt={`${title} screenshot ${idx + 1}`}
-            initial={{ opacity: 0, x: direction * 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: direction * -50 }}
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
             transition={{ duration: 0.25, ease: EASE }}
-            className="absolute inset-0 w-full h-full object-cover cursor-zoom-in"
+            className="max-w-full max-h-full object-contain cursor-zoom-in rounded-xl shadow-2xl"
             onClick={() => onImageClick?.(images[idx])}
             onError={(el) => { (el.target as HTMLImageElement).src = '/placeholder.png' }}
           />
         </AnimatePresence>
 
-        {/* Buttons */}
+        {/* Navigation Arrow Buttons */}
         {images.length > 1 && (
           <>
             <button
               onClick={prev}
-              className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-black/60 backdrop-blur-md hover:bg-black/80
-                         rounded-full text-white border border-[#464554]/50 transition-colors z-20"
+              className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-black/60 backdrop-blur-md hover:bg-black/80
+                         rounded-full text-white border border-white/20 transition-colors z-20 shadow-xl"
               aria-label="Previous screenshot"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-5 w-5" />
             </button>
             <button
               onClick={next}
-              className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-black/60 backdrop-blur-md hover:bg-black/80
-                         rounded-full text-white border border-[#464554]/50 transition-colors z-20"
+              className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-black/60 backdrop-blur-md hover:bg-black/80
+                         rounded-full text-white border border-white/20 transition-colors z-20 shadow-xl"
               aria-label="Next screenshot"
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-5 w-5" />
             </button>
           </>
         )}
       </div>
 
       {/* Thumbnail Strip */}
-      {images.length > 0 && (
-        <div className="absolute bottom-2 left-0 right-0 px-4 flex justify-center gap-2.5 z-20 overflow-x-auto py-1 scrollbar-none">
+      {images.length > 1 && (
+        <div className="absolute bottom-3 left-0 right-0 px-4 flex justify-center gap-2.5 z-20 overflow-x-auto py-1 scrollbar-none">
           {images.map((img, i) => (
             <button
               key={i}
               onClick={(e) => go(e, i)}
-              className={`relative w-12 h-12 rounded-xl overflow-hidden border-2 shrink-0 transition-all ${
+              className={`relative w-16 h-11 rounded-lg overflow-hidden border-2 shrink-0 transition-all ${
                 i === idx
-                  ? 'border-[#c0c1ff] scale-105 shadow-md shadow-[#c0c1ff]/20'
-                  : 'border-[#464554]/55 opacity-55 hover:opacity-100 hover:border-white/40'
+                  ? 'border-[#c0c1ff] scale-105 shadow-xl shadow-[#c0c1ff]/30'
+                  : 'border-[#464554]/55 opacity-50 hover:opacity-100 hover:border-white/40'
               }`}
               aria-label={`Show screenshot ${i + 1}`}
             >
