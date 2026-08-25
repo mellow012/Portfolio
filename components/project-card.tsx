@@ -85,7 +85,7 @@ function MiniSlider({ images, title }: MiniSliderProps) {
       <img
         src={images[0]}
         alt={title}
-        className="w-full h-full object-cover group-hover:scale-105
+        className="w-full h-full object-contain group-hover:scale-105
                    transition-transform duration-700 ease-out"
         onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.png' }}
       />
@@ -104,7 +104,7 @@ function MiniSlider({ images, title }: MiniSliderProps) {
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.35, ease: EASE }}
-          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+          className="absolute inset-0 w-full h-full object-contain group-hover:scale-105 transition-transform duration-700 ease-out"
           onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.png' }}
         />
       </AnimatePresence>
@@ -142,11 +142,10 @@ function MiniSlider({ images, title }: MiniSliderProps) {
             key={i}
             type="button"
             onClick={(e) => goTo(e, i)}
-            className={`h-1 rounded-full transition-all duration-300 ${
-              i === idx
+            className={`h-1 rounded-full transition-all duration-300 ${i === idx
                 ? 'w-6 bg-white shadow-sm'
                 : 'w-2 bg-white/40 hover:bg-white/70'
-            }`}
+              }`}
             aria-label={`Go to image ${i + 1}`}
           />
         ))}
@@ -170,8 +169,8 @@ export default function ProjectCard({
   isLiked = false, githubUrl, liveUrl,
   onLike, onView, onSelect,
 }: ProjectCardProps) {
-  const [liked,         setLiked]         = useState(isLiked)
-  const [likeCount,     setLikeCount]     = useState(likes)
+  const [liked, setLiked] = useState(isLiked)
+  const [likeCount, setLikeCount] = useState(likes)
   const [likeAnimating, setLikeAnimating] = useState(false)
 
   // Build the full image list: cover image first, then any additional screenshots
@@ -213,7 +212,7 @@ export default function ProjectCard({
     >
       <div>
         {/* ══ Image / slider area (Inset frame style) ══ */}
-        <div className="relative overflow-hidden h-48 bg-[#121314] rounded-xl m-2 border border-[#3e3d4c]/30">
+        <div className="relative overflow-hidden h-56 bg-[#121314] rounded-xl m-2 border border-[#3e3d4c]/30">
           <MiniSlider images={allImages} title={title} />
 
           {/* Gradient scrim */}
@@ -294,8 +293,7 @@ export default function ProjectCard({
               aria-label={liked ? 'Unlike' : 'Like'}>
               <motion.div animate={likeAnimating ? { scale: [1, 1.45, 1] } : { scale: 1 }}
                 transition={{ duration: 0.35 }}>
-                <Heart className={`h-3.5 w-3.5 transition-all duration-200 ${
-                  liked ? 'fill-rose-500 text-rose-500' : 'fill-transparent'}`} />
+                <Heart className={`h-3.5 w-3.5 transition-all duration-200 ${liked ? 'fill-rose-500 text-rose-500' : 'fill-transparent'}`} />
               </motion.div>
               <span className={liked ? 'text-rose-500' : ''}>{likeCount}</span>
             </button>

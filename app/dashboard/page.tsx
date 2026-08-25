@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
   collection, addDoc, getDoc, getDocs, doc,
-  setDoc, serverTimestamp, orderBy, query, limit
+  setDoc, deleteDoc, serverTimestamp, orderBy, query, limit
 } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { auth, db, storage } from '../../lib/firebaseConfig'
@@ -13,8 +13,8 @@ import Link from 'next/link'
 import {
   LayoutDashboard, Plus, Upload, X, Loader2, Github,
   Globe, Code, Star, User, Eye, Folder, Mail, QrCode,
-  Edit,Trash2, TrendingUp, ArrowUpRight, CheckCircle2, AlertCircle,
-  BarChart2, FileText, Zap, Clock, ExternalLink
+  Edit, Trash2, TrendingUp, ArrowUpRight, CheckCircle2, AlertCircle,
+  BarChart2, FileText, Zap, Clock, ExternalLink, Search
 } from 'lucide-react'
 
 /* ─── Constants ──────────────────────────────────── */
@@ -51,7 +51,7 @@ interface Contact {
   whatsapp: string
 }
 
-type Tab = 'overview' | 'add-project' | 'edit-project'
+type Tab = 'overview' | 'add-project' | 'edit-project' | 'manage-projects'
 type Toast = { id: number; message: string; type: 'success' | 'error' | 'info' }
 
 /* ─── Toast ──────────────────────────────────────── */
@@ -78,12 +78,12 @@ function ToastStack({ toasts }: { toasts: Toast[] }) {
             className={`flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-xl border
                         text-sm font-medium backdrop-blur-sm pointer-events-auto
                         ${t.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
-                        : t.type === 'error'   ? 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400'
-                                               : 'bg-card border-border text-foreground'}`}
+                : t.type === 'error' ? 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400'
+                  : 'bg-card border-border text-foreground'}`}
           >
             {t.type === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0" />
-           : t.type === 'error'   ? <AlertCircle  className="h-4 w-4 shrink-0" />
-                                  : <Zap          className="h-4 w-4 shrink-0" />}
+              : t.type === 'error' ? <AlertCircle className="h-4 w-4 shrink-0" />
+                : <Zap className="h-4 w-4 shrink-0" />}
             {t.message}
           </motion.div>
         ))}
@@ -128,7 +128,7 @@ async function uploadImageToStorage(file: File, path: string): Promise<string> {
 
 /* ─── Overview tab ───────────────────────────────── */
 function OverviewTab({
-  projects, userName, greeting, currentTime, contact, qrCode, onNavigate, onEditProject
+  projects, userName, greeting, currentTime, contact, qrCode, onNavigate, onEditProject, onDeleteProject
 }: {
   projects: Project[]
   userName: string
@@ -138,11 +138,13 @@ function OverviewTab({
   qrCode: string | null
   onNavigate: (tab: Tab) => void
   onEditProject: (projectId: string) => void
+  onDeleteProject: (projectId: string, title: string) => void
 }) {
-  const totalViews    = projects.reduce((s, p) => s + (p.views || 0), 0)
-  const totalLikes    = projects.reduce((s, p) => s + (p.likes || 0), 0)
+  const [confirmingId, setConfirmingId] = useState<string | null>(null)
+  const totalViews = projects.reduce((s, p) => s + (p.views || 0), 0)
+  const totalLikes = projects.reduce((s, p) => s + (p.likes || 0), 0)
   const featuredCount = projects.filter((p) => p.featured).length
-  const liveCount     = projects.filter((p) => p.status === 'Live').length
+  const liveCount = projects.filter((p) => p.status === 'Live').length
 
   const recent = [...projects]
     .sort((a, b) => {
@@ -153,10 +155,10 @@ function OverviewTab({
     .slice(0, 4)
 
   const stats = [
-    { icon: Folder,     label: 'Projects',    value: projects.length,             accent: 'text-primary',     bg: 'bg-primary/10'      },
-    { icon: Eye,        label: 'Total views', value: totalViews.toLocaleString(), accent: 'text-emerald-500', bg: 'bg-emerald-500/10'  },
-    { icon: Star,       label: 'Featured',    value: featuredCount,               accent: 'text-amber-500',   bg: 'bg-amber-500/10'    },
-    { icon: TrendingUp, label: 'Live now',    value: liveCount,                   accent: 'text-rose-500',    bg: 'bg-rose-500/10'     },
+    { icon: Folder, label: 'Projects', value: projects.length, accent: 'text-primary', bg: 'bg-primary/10' },
+    { icon: Eye, label: 'Total views', value: totalViews.toLocaleString(), accent: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+    { icon: Star, label: 'Featured', value: featuredCount, accent: 'text-amber-500', bg: 'bg-amber-500/10' },
+    { icon: TrendingUp, label: 'Live now', value: liveCount, accent: 'text-rose-500', bg: 'bg-rose-500/10' },
   ]
 
   return (
@@ -211,9 +213,9 @@ function OverviewTab({
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[
-            { label: 'Add project',     desc: 'Publish new work',          icon: Plus,    tab: 'add-project' as Tab, href: null          },
-            { label: 'Edit profile',    desc: 'Update bio & info',          icon: User,    tab: null,                 href: '/profile'    },
-            { label: 'View portfolio',  desc: 'See public-facing site',     icon: ExternalLink, tab: null,            href: '/'           },
+            { label: 'Add project', desc: 'Publish new work', icon: Plus, tab: 'add-project' as Tab, href: null },
+            { label: 'Edit profile', desc: 'Update bio & info', icon: User, tab: null, href: '/profile' },
+            { label: 'View portfolio', desc: 'See public-facing site', icon: ExternalLink, tab: null, href: '/' },
           ].map((action) => {
             const Icon = action.icon
             const inner = (
@@ -312,8 +314,8 @@ function OverviewTab({
                       {p.status && (
                         <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium
                           ${p.status === 'Live' ? 'bg-emerald-500/10 text-emerald-500'
-                          : p.status === 'In Development' ? 'bg-amber-500/10 text-amber-500'
-                          : 'bg-primary/10 text-primary'}`}>
+                            : p.status === 'In Development' ? 'bg-amber-500/10 text-amber-500'
+                              : 'bg-primary/10 text-primary'}`}>
                           {p.status}
                         </span>
                       )}
@@ -321,18 +323,47 @@ function OverviewTab({
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => onEditProject(p.id)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity
-                                 text-xs text-primary font-medium hover:underline">
-                      Edit
-                    </button>
-                    <Link href={`/projects/${p.id}`}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity
-                                 text-xs text-primary font-medium hover:underline">
-                      View
-                    </Link>
+                    {confirmingId === p.id ? (
+                      <>
+                        <span className="text-xs text-muted-foreground hidden sm:inline">Delete?</span>
+                        <button
+                          type="button"
+                          onClick={() => { onDeleteProject(p.id, p.title || 'Untitled'); setConfirmingId(null) }}
+                          className="text-xs font-semibold text-rose-500 hover:text-rose-400 hover:underline">
+                          Confirm
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmingId(null)}
+                          className="text-xs text-muted-foreground hover:text-foreground hover:underline">
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => onEditProject(p.id)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity
+                                     text-xs text-primary font-medium hover:underline">
+                          Edit
+                        </button>
+                        <Link href={`/projects/${p.id}`}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity
+                                     text-xs text-primary font-medium hover:underline">
+                          View
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmingId(p.id)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity
+                                     text-xs text-rose-500 font-medium hover:underline
+                                     inline-flex items-center gap-1">
+                          <Trash2 className="h-3 w-3" />
+                          Delete
+                        </button>
+                      </>
+                    )}
                   </div>
                 </motion.div>
               ))}
@@ -386,27 +417,170 @@ function OverviewTab({
   )
 }
 
+/* ─── Manage Projects tab (full list, search, edit/delete) ─── */
+function ManageProjectsTab({
+  projects, onEditProject, onDeleteProject
+}: {
+  projects: Project[]
+  onEditProject: (projectId: string) => void
+  onDeleteProject: (projectId: string, title: string) => void
+}) {
+  const [query, setQuery] = useState('')
+  const [confirmingId, setConfirmingId] = useState<string | null>(null)
+
+  const sorted = [...projects].sort((a, b) => {
+    const da = a.updatedAt?.toDate?.() ?? a.createdAt?.toDate?.() ?? new Date(0)
+    const db = b.updatedAt?.toDate?.() ?? b.createdAt?.toDate?.() ?? new Date(0)
+    return db.getTime() - da.getTime()
+  })
+
+  const filtered = query.trim()
+    ? sorted.filter((p) =>
+      (p.title || '').toLowerCase().includes(query.toLowerCase()) ||
+      (p.category || '').toLowerCase().includes(query.toLowerCase()))
+    : sorted
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="relative w-full sm:w-80">
+          <Search className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by title or category…"
+            className="w-full pl-9 pr-3 py-2.5 bg-card border border-border rounded-xl text-sm
+                       focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50"
+          />
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {filtered.length} of {projects.length} project{projects.length === 1 ? '' : 's'}
+        </p>
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="glass rounded-2xl text-center py-14">
+          <Folder className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">
+            {projects.length === 0 ? 'No projects yet.' : 'No projects match that search.'}
+          </p>
+        </div>
+      ) : (
+        <div className="glass rounded-2xl divide-y divide-border/50">
+          {filtered.map((p) => (
+            <div key={p.id} className="flex items-center gap-3 p-4 hover:bg-accent/50 transition-colors group">
+              <div className="w-14 h-14 rounded-xl bg-muted overflow-hidden shrink-0 border border-border/40">
+                {(p.imageUrl || p.image) ? (
+                  <img
+                    src={p.imageUrl || p.image}
+                    alt={p.title}
+                    className="w-full h-full object-contain"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Folder className="h-5 w-5 text-muted-foreground/40" />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">{p.title || 'Untitled'}</p>
+                <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                  {p.category && (
+                    <span className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded-md font-medium">
+                      {p.category}
+                    </span>
+                  )}
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Eye className="h-3 w-3" /> {(p.views || 0).toLocaleString()}
+                  </span>
+                  {p.featured && (
+                    <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/10 text-amber-500 rounded-md font-medium">
+                      Featured
+                    </span>
+                  )}
+                  {p.status && (
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium
+                      ${p.status === 'Live' ? 'bg-emerald-500/10 text-emerald-500'
+                        : p.status === 'In Development' ? 'bg-amber-500/10 text-amber-500'
+                          : 'bg-primary/10 text-primary'}`}>
+                      {p.status}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 shrink-0">
+                {confirmingId === p.id ? (
+                  <>
+                    <span className="text-xs text-muted-foreground hidden sm:inline">Delete?</span>
+                    <button
+                      type="button"
+                      onClick={() => { onDeleteProject(p.id, p.title || 'Untitled'); setConfirmingId(null) }}
+                      className="text-xs font-semibold text-rose-500 hover:text-rose-400 hover:underline">
+                      Confirm
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingId(null)}
+                      className="text-xs text-muted-foreground hover:text-foreground hover:underline">
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => onEditProject(p.id)}
+                      className="text-xs text-primary font-medium hover:underline">
+                      Edit
+                    </button>
+                    <Link href={`/projects/${p.id}`}
+                      className="text-xs text-primary font-medium hover:underline">
+                      View
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingId(p.id)}
+                      className="text-xs text-rose-500 font-medium hover:underline
+                                 inline-flex items-center gap-1">
+                      <Trash2 className="h-3 w-3" />
+                      Delete
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 /* ─── Add Project tab ────────────────────────────── */
 function AddProjectTab({ onSuccess }: { onSuccess: () => void }) {
   const { toasts, push: toast } = useToast()
 
-  const [title,        setTitle]        = useState('')
-  const [summary,      setSummary]      = useState('')
-  const [description,  setDescription]  = useState('')
-  const [category,     setCategory]     = useState('web')
-  const [status,       setStatus]       = useState('Live')
-  const [featured,     setFeatured]     = useState(false)
-  const [githubUrl,    setGithubUrl]    = useState('')
-  const [liveUrl,      setLiveUrl]      = useState('')
-  const [techInput,    setTechInput]    = useState('')
-  const [tags,         setTags]         = useState<string[]>([])
-  const [imageBase64,  setImageBase64]  = useState<string | null>(null)
-  const [imageFile,    setImageFile]    = useState<File | null>(null)
-  const [screenshots,    setScreenshots]    = useState<string[]>([])
+  const [title, setTitle] = useState('')
+  const [summary, setSummary] = useState('')
+  const [description, setDescription] = useState('')
+  const [category, setCategory] = useState('web')
+  const [status, setStatus] = useState('Live')
+  const [featured, setFeatured] = useState(false)
+  const [githubUrl, setGithubUrl] = useState('')
+  const [liveUrl, setLiveUrl] = useState('')
+  const [techInput, setTechInput] = useState('')
+  const [tags, setTags] = useState<string[]>([])
+  const [imageBase64, setImageBase64] = useState<string | null>(null)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [screenshots, setScreenshots] = useState<string[]>([])
   const [screenshotFiles, setScreenshotFiles] = useState<File[]>([])
-  const [isSubmitting,   setIsSubmitting]   = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const fileInputRef       = useRef<HTMLInputElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const screenshotInputRef = useRef<HTMLInputElement>(null)
 
   /* Parse tech tags from input */
@@ -484,12 +658,12 @@ function AddProjectTab({ onSuccess }: { onSuccess: () => void }) {
     if (to < 0 || to >= screenshots.length) return
     setScreenshots((prev) => {
       const next = [...prev]
-      ;[next[from], next[to]] = [next[to], next[from]]
+        ;[next[from], next[to]] = [next[to], next[from]]
       return next
     })
     setScreenshotFiles((prev) => {
       const next = [...prev]
-      ;[next[from], next[to]] = [next[to], next[from]]
+        ;[next[from], next[to]] = [next[to], next[from]]
       return next
     })
   }
@@ -536,19 +710,19 @@ function AddProjectTab({ onSuccess }: { onSuccess: () => void }) {
         category,
         status,
         featured,
-        githubUrl:    githubUrl || null,
-        liveUrl:      liveUrl   || null,
+        githubUrl: githubUrl || null,
+        liveUrl: liveUrl || null,
         technologies,
-        tags:         technologies,   // store in both fields for compatibility
+        tags: technologies,   // store in both fields for compatibility
         // Store Cloud Storage URL
-        image:        coverImageUrl,
-        imageUrl:     coverImageUrl,
-        screenshots:  screenshotUrls,
-        userId:       auth.currentUser.uid,
-        likes:        0,
-        views:        0,
-        createdAt:    serverTimestamp(),
-        updatedAt:    serverTimestamp(),
+        image: coverImageUrl,
+        imageUrl: coverImageUrl,
+        screenshots: screenshotUrls,
+        userId: auth.currentUser.uid,
+        likes: 0,
+        views: 0,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       })
 
       toast('Project published!', 'success')
@@ -606,8 +780,8 @@ function AddProjectTab({ onSuccess }: { onSuccess: () => void }) {
                 className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border text-sm font-medium
                             transition-all w-full
                             ${featured
-                              ? 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400'
-                              : 'bg-card border-border text-muted-foreground hover:border-primary/30'}`}
+                    ? 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400'
+                    : 'bg-card border-border text-muted-foreground hover:border-primary/30'}`}
               >
                 <Star className={`h-4 w-4 ${featured ? 'fill-amber-500 text-amber-500' : ''}`} />
                 {featured ? 'Featured project ✓' : 'Mark as featured'}
@@ -902,24 +1076,24 @@ function AddProjectTab({ onSuccess }: { onSuccess: () => void }) {
 function EditProjectTab({ projectId, onSuccess }: { projectId: string; onSuccess: () => void }) {
   const { toasts, push: toast } = useToast()
 
-  const [title,        setTitle]        = useState('')
-  const [summary,      setSummary]      = useState('')
-  const [description,  setDescription]  = useState('')
-  const [category,     setCategory]     = useState('web')
-  const [status,       setStatus]       = useState('Live')
-  const [featured,     setFeatured]     = useState(false)
-  const [githubUrl,    setGithubUrl]    = useState('')
-  const [liveUrl,      setLiveUrl]      = useState('')
-  const [techInput,    setTechInput]    = useState('')
-  const [imageBase64,  setImageBase64]  = useState<string | null>(null)
-  const [imageUrl,     setImageUrl]     = useState<string | null>(null)
-  const [imageFile,    setImageFile]    = useState<File | null>(null)
-  const [screenshots,    setScreenshots]    = useState<string[]>([])
+  const [title, setTitle] = useState('')
+  const [summary, setSummary] = useState('')
+  const [description, setDescription] = useState('')
+  const [category, setCategory] = useState('web')
+  const [status, setStatus] = useState('Live')
+  const [featured, setFeatured] = useState(false)
+  const [githubUrl, setGithubUrl] = useState('')
+  const [liveUrl, setLiveUrl] = useState('')
+  const [techInput, setTechInput] = useState('')
+  const [imageBase64, setImageBase64] = useState<string | null>(null)
+  const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [screenshots, setScreenshots] = useState<string[]>([])
   const [screenshotFiles, setScreenshotFiles] = useState<File[]>([])
-  const [isLoading,      setIsLoading]      = useState(true)
-  const [isSubmitting,   setIsSubmitting]   = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const fileInputRef       = useRef<HTMLInputElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const screenshotInputRef = useRef<HTMLInputElement>(null)
 
   /* Load project data on mount */
@@ -1027,12 +1201,12 @@ function EditProjectTab({ projectId, onSuccess }: { projectId: string; onSuccess
     if (to < 0 || to >= screenshots.length) return
     setScreenshots((prev) => {
       const next = [...prev]
-      ;[next[from], next[to]] = [next[to], next[from]]
+        ;[next[from], next[to]] = [next[to], next[from]]
       return next
     })
     setScreenshotFiles((prev) => {
       const next = [...prev]
-      ;[next[from], next[to]] = [next[to], next[from]]
+        ;[next[from], next[to]] = [next[to], next[from]]
       return next
     })
   }
@@ -1255,14 +1429,14 @@ export default function AdminDashboard() {
   const router = useRouter()
   const { toasts, push: toast } = useToast()
 
-  const [tab,         setTab]         = useState<Tab>('overview')
+  const [tab, setTab] = useState<Tab>('overview')
   const [pageLoading, setPageLoading] = useState(true)
-  const [projects,    setProjects]    = useState<Project[]>([])
-  const [userName,    setUserName]    = useState('Mellow')
-  const [greeting,    setGreeting]    = useState('')
+  const [projects, setProjects] = useState<Project[]>([])
+  const [userName, setUserName] = useState('Mellow')
+  const [greeting, setGreeting] = useState('')
   const [currentTime, setCurrentTime] = useState('')
-  const [contact,     setContact]     = useState<Contact>({ email: '', twitter: '', github: '', whatsapp: '' })
-  const [qrCode,      setQrCode]      = useState<string | null>(null)
+  const [contact, setContact] = useState<Contact>({ email: '', twitter: '', github: '', whatsapp: '' })
+  const [qrCode, setQrCode] = useState<string | null>(null)
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -1279,9 +1453,9 @@ export default function AdminDashboard() {
           name = d?.name || 'Mellow'
           setUserName(name)
           setContact({
-            email:    d?.contact?.email    || user.email || '',
-            twitter:  d?.contact?.twitter  || '',
-            github:   d?.contact?.github   || '',
+            email: d?.contact?.email || user.email || '',
+            twitter: d?.contact?.twitter || '',
+            github: d?.contact?.github || '',
             whatsapp: d?.contact?.whatsapp || '',
           })
           setQrCode(d?.qrCode || null)
@@ -1292,7 +1466,7 @@ export default function AdminDashboard() {
         setProjects(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Project)))
 
         // Greeting + time
-        const now  = new Date()
+        const now = new Date()
         const hour = now.getHours()
         setGreeting(`${hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'}, ${name}`)
         setCurrentTime(now.toLocaleString('en-GB', {
@@ -1304,7 +1478,7 @@ export default function AdminDashboard() {
         // Log visit (non-blocking)
         setDoc(doc(db, 'admin_logs', `${user.uid}_${Date.now()}`),
           { action: 'view_dashboard', timestamp: new Date() }, { merge: true }
-        ).catch(() => {})
+        ).catch(() => { })
 
       } catch (err: any) {
         toast('Failed to load dashboard data', 'error')
@@ -1328,6 +1502,23 @@ export default function AdminDashboard() {
     setTab('edit-project')
   }
 
+  const handleDeleteProject = async (projectId: string, title: string) => {
+    // Optimistic removal — roll back if the delete actually fails.
+    const prevProjects = projects
+    setProjects((ps) => ps.filter((p) => p.id !== projectId))
+    try {
+      await deleteDoc(doc(db, 'projects', projectId))
+      toast(`Deleted "${title}"`, 'success')
+      if (editingProjectId === projectId) {
+        setEditingProjectId(null)
+        setTab('overview')
+      }
+    } catch (err) {
+      setProjects(prevProjects)
+      toast(`Failed to delete "${title}"`, 'error')
+    }
+  }
+
   /* ── Loading ── */
   if (pageLoading) {
     return (
@@ -1342,8 +1533,9 @@ export default function AdminDashboard() {
   }
 
   const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
-    { id: 'overview',    label: 'Overview',    icon: LayoutDashboard },
-    { id: 'add-project', label: 'Add project', icon: Plus            },
+    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+    { id: 'manage-projects', label: 'Manage projects', icon: Folder },
+    { id: 'add-project', label: 'Add project', icon: Plus },
     ...(editingProjectId ? [{ id: 'edit-project' as Tab, label: 'Edit project', icon: Edit }] : []),
   ]
 
@@ -1363,7 +1555,10 @@ export default function AdminDashboard() {
               Admin dashboard
             </div>
             <h1 className="text-4xl sm:text-5xl font-bold text-foreground">
-              {tab === 'overview' ? 'Overview' : tab === 'add-project' ? 'Add project' : 'Edit project'}
+              {tab === 'overview' ? 'Overview'
+                : tab === 'manage-projects' ? 'Manage projects'
+                  : tab === 'add-project' ? 'Add project'
+                    : 'Edit project'}
             </h1>
           </div>
 
@@ -1378,8 +1573,8 @@ export default function AdminDashboard() {
                 className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl
                             text-sm font-medium transition-all duration-200
                             ${tab === id
-                              ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20'
-                              : 'text-muted-foreground hover:text-foreground hover:bg-accent'}`}
+                    ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'}`}
               >
                 <Icon className="h-4 w-4" />
                 {label}
@@ -1406,12 +1601,19 @@ export default function AdminDashboard() {
                   qrCode={qrCode}
                   onNavigate={setTab}
                   onEditProject={startEditProject}
+                  onDeleteProject={handleDeleteProject}
+                />
+              ) : tab === 'manage-projects' ? (
+                <ManageProjectsTab
+                  projects={projects}
+                  onEditProject={startEditProject}
+                  onDeleteProject={handleDeleteProject}
                 />
               ) : tab === 'add-project' ? (
                 <AddProjectTab onSuccess={handleProjectAdded} />
               ) : (
                 editingProjectId && (
-                  <EditProjectTab 
+                  <EditProjectTab
                     projectId={editingProjectId}
                     onSuccess={handleProjectAdded}
                   />
